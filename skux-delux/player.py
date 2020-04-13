@@ -1,5 +1,12 @@
+import random
+from .aiutils import *
 
-class ExamplePlayer:
+"""Actions syntax:
+    ("MOVE", n, (xa, ya), (xb, yb))
+    ("BOOM", (x, y))
+"""
+
+class RandomPlayer:
     def __init__(self, colour):
         """
         This method is called once at the beginning of the game to initialise
@@ -13,6 +20,9 @@ class ExamplePlayer:
         """
         # TODO: Set up state representation.
 
+        # set up our current node and
+        self.current_node = Node()
+        self.colour = colour
 
     def action(self):
         """
@@ -24,8 +34,8 @@ class ExamplePlayer:
         represented based on the spec's instructions for representing actions.
         """
         # TODO: Decide what action to take, and return it
-        return ("BOOM", (0, 0))
-
+        # this player of ours will just pick a random one
+        return random.choice(get_possible_actions(self.current_node.state, self.colour))
 
     def update(self, colour, action):
         """
@@ -46,3 +56,15 @@ class ExamplePlayer:
         against the game rules).
         """
         # TODO: Update state representation in response to action.
+
+        # if it was a MOVE action, update the current_node accordingly
+        if action[0] == MOVE:
+            self.current_node = move_action(colour, self.current_node, action[1], action[2], action[3])
+            return
+        # else, it was a BOOM action, update accordingly
+        self.current_node = boom_action(colour, self.current_node, action[1])
+        return
+
+    def get_colour(self):
+        """return the colour we were given to play"""
+        return self.colour
