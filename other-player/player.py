@@ -6,8 +6,10 @@ from .aiutils import *
     ("BOOM", (x, y))
 """
 
+budget = 100
 
-class RandomPlayer:
+
+class GreedyPlayer:
     def __init__(self, colour):
         """
         This method is called once at the beginning of the game to initialise
@@ -36,7 +38,7 @@ class RandomPlayer:
         """
         # TODO: Decide what action to take, and return it
         # this player of ours will just pick a random one
-        return random.choice(get_possible_actions(self.current_node.state, self.colour))
+        return get_greedy_action(self.current_node.state, self.colour, budget)
 
     def update(self, colour, action):
         """
@@ -65,8 +67,3 @@ class RandomPlayer:
         # else, it was a BOOM action, update accordingly
         self.current_node = boom_action(colour, self.current_node, action[1])
         return
-
-    def player_colour(self):
-        """return the colour we were given to play"""
-        return self.colour
-
