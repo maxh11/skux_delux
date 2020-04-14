@@ -178,7 +178,6 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
 
     # execute move on new_node state
     # move the pieces from the stack to a new stack
-
     new_node.state.get_colour(colour)[stack] -= n_pieces
     if new_node.state.get_colour(colour)[stack] == 0:
         new_node.state.get_colour(colour).pop(stack)

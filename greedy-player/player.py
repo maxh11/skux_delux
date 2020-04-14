@@ -38,7 +38,7 @@ class GreedyPlayer:
         """
         # TODO: Decide what action to take, and return it
         # this player of ours will just pick a random one
-        return get_greedy_action(self.current_node.state, self.colour, budget)
+        return get_greedy_action(self.current_node, self.colour, budget)
 
     def update(self, colour, action):
         """
@@ -59,11 +59,4 @@ class GreedyPlayer:
         against the game rules).
         """
         # TODO: Update state representation in response to action.
-
-        # if it was a MOVE action, update the current_node accordingly
-        if action[0] == MOVE:
-            self.current_node = move_action(colour, self.current_node, action[1], action[2], action[3])
-            return
-        # else, it was a BOOM action, update accordingly
-        self.current_node = boom_action(colour, self.current_node, action[1])
-        return
+        self.current_node = apply_action(self.current_node, action, colour)

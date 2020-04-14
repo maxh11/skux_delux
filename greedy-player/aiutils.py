@@ -1,9 +1,6 @@
+import random
 import sys
 import heapq
-
-"""There are ways we could make some functions here faster. Default parameters could be set to
-   None in constructors as per the advice of https://effbot.org/zone/default-values.htm#what-to-do-instead
-   The current use of default params shouldn't be a problem though"""
 
 LEFT = (-1, 0)
 RIGHT = (1, 0)
@@ -12,9 +9,10 @@ DOWN = (0, -1)
 MOVE_DIRECTIONS = [LEFT, RIGHT, UP, DOWN]
 
 # values for the heuristic
+INFINITY = sys.maxsize
 LOST_GAME = sys.maxsize
 WIN_GAME = -sys.maxsize
-# sys.setrecursionlimit(10000)
+DRAW_GAME = LOST_GAME / 2
 
 MOVE = "MOVE"
 BOOM = "BOOM"
@@ -79,7 +77,7 @@ class Node:
         if state is None:
             self.state = State()
         else:
-            self.state = state
+            self.state = State(state.white_stacks, state.black_stacks)
         self.value = value
         self.parent = parent
         self.move = move
@@ -170,8 +168,7 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
     """ apply a move action to the given base node by moving n_pieces from stack n_steps in move_direction
             returns new_node resulting from the move """
     # make a new node that is a copy of the base_node
-    new_node = Node(State(base_node.state.white_stacks, base_node.state.black_stacks))
-
+    new_node = Node(base_node.state)
     # adjust new_node fields according to how our move will change them:
     # parent node of the new_node is the base_node
     new_node.parent = base_node
@@ -182,6 +179,7 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
 
     # execute move on new_node state
     # move the pieces from the stack to a new stack
+
     new_node.state.get_colour(colour)[stack] -= n_pieces
     if new_node.state.get_colour(colour)[stack] == 0:
         new_node.state.get_colour(colour).pop(stack)
@@ -198,83 +196,9 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
     return new_node
 
 
-"""NEED TO FIX THIS TO WORK WITH PLAYING AS WHITE OR BLACK"""
-
-
-def move_action2(colour, base_node, stack, n_pieces, move):
-    """ apply a move action to the given base node by moving n_pieces from stack n_steps in move_direction
-            returns new_node resulting from the move """
-    dest_square = (stack[0] + move[0], stack[1] + move[1])
-
-    # make a new node that is a copy of the base_node
-    new_node = Node(State(base_node.state.white_stacks, base_node.state.black_stacks))
-
-    # adjust new_node fields according to how our move will change them:
-    # parent node of the new_node is the base_node
-    new_node.parent = base_node
-    # new_node depth is parent depth + 1
-    new_node.depth = base_node.depth + 1
-    # store the move which got us to new_node
-    new_node.move = (MOVE, n_pieces, stack, dest_square)
-
-    # execute move on new_node state
-    # move the pieces from the stack to a new stack
-    new_node.state.white_stacks[stack] -= n_pieces
-    if new_node.state.white_stacks[stack] == 0:
-        new_node.state.white_stacks.pop(stack)
-    if dest_square in new_node.state.white_stacks:
-        # there is already a stack in the square we are moving to, just add number of pieces
-        new_node.state.white_stacks[dest_square] += n_pieces
-    else:
-        # we have to make a new key value pair because we made a new stack
-        new_node.state.white_stacks[dest_square] = n_pieces
-
-    # update node value
-    new_node.value = heuristic(colour, new_node.state)
-
-    return new_node
-
-
-"""NEED TO FIX THIS TO WORK WITH PLAYING AS WHITE OR BLACK"""
-
-
-def move_action3(colour, base_node, stack, n_pieces, move_direction, n_steps):
-    """ apply a move action to the given base node by moving n_pieces from stack n_steps in move_direction
-        returns new_node resulting from the move """
-    dest_square = calculate_dest_square(stack, move_direction, n_steps)
-
-    # make a new node that is a copy of the base_node
-    new_node = Node(State(base_node.state.white_stacks.copy(), base_node.state.black_stacks.copy()))
-
-    # adjust new_node fields according to how our move will change them:
-    # parent node of the new_node is the base_node
-    new_node.parent = base_node
-    # new_node depth is parent depth + 1
-    new_node.depth = base_node.depth + 1
-    # store the move which got us to new_node
-    new_node.move = (MOVE, n_pieces, stack, dest_square)
-
-    # execute move on new_node state
-    # move the pieces from the stack to a new stack
-    new_node.state.white_stacks[stack] -= n_pieces
-    if new_node.state.white_stacks[stack] == 0:
-        new_node.state.white_stacks.pop(stack)
-    if dest_square in new_node.state.white_stacks:
-        # there is already a stack in the square we are moving to, just add number of pieces
-        new_node.state.white_stacks[dest_square] += n_pieces
-    else:
-        # we have to make a new key value pair because we made a new stack
-        new_node.state.white_stacks[dest_square] = n_pieces
-
-    # update node value
-    new_node.value = heuristic(colour, new_node.state)
-
-    return new_node
-
-
 def boom_action(colour, base_node, stack_to_boom):
     # make a new node that is a copy of the base_node
-    new_node = Node(State(base_node.state.white_stacks, base_node.state.black_stacks))
+    new_node = Node(base_node.state)
 
     # adjust new_node fields according to how the boom change them:
     # parent node of the new_node is the base_node
@@ -295,29 +219,29 @@ def boom_action(colour, base_node, stack_to_boom):
 
 def heuristic(colour, state):
     if (state.total_black() == 0) and (state.total_white() == 0):
-        return DRAW
+        return DRAW_GAME
 
     if colour == WHITE:
         if state.total_black() == 0:
             # win game
-            return INFINITY
+            return WIN_GAME
         if state.total_white() == 0:
             # lost game
-            return -INFINITY
+            return LOST_GAME
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
-        # distance, higher is better
-        return state.total_white() - state.total_black() + manhattan_dist(state)
+        # distance, **lower** is better
+        return state.total_black() - state.total_white() + manhattan_dist(state)
 
     if colour == BLACK:
         if state.total_white() == 0:
             # win game
-            return INFINITY
+            return WIN_GAME
         if state.total_black() == 0:
             # lost game
-            return -INFINITY
+            return LOST_GAME
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
-        # distance, higher is better
-        return state.total_black() - state.total_white() + manhattan_dist(state)
+        # distance, **lower** is better
+        return state.total_white() - state.total_black() + manhattan_dist(state)
 
     # else, incorrect colour given return None
     return None
@@ -360,60 +284,36 @@ def chain_boom(state, stack_to_boom, stacks_to_remove=None):
     return state
 
 
-def get_greedy_action(currrent_node, colour, budget):
-    # make a list of all the nodes we explore
-    explored_nodes = []
+def get_greedy_action(base_node, colour, budget):
+    """returns the action associated with the best score achieved after that action is enacted on our current_node.state
+    Note: because python uses a min-heap for their priority queue implementation, better scores are lower, the lower the score the better its value"""
 
-    # make the frontier priority queue with only the start node
-    frontier = []
-    heapq.heappush(frontier, (0, start_node))
+    # store actions in a dict {} where the key is the score achieved by that action, break ties randomly
+    # get the possible actions from our current position
 
-    winning_node = None
+    # make a copy of the initial node we were given
+    # base_node = Node(current_node.state)
 
-    # each action takes the form: (score, (stack_location, is_boom_action, n_pieces, move_direction, n_steps))
-    # score will be the number of enemy pieces left on board, ties broken randomly
-    # while there are still nodes in the frontier and we have not found the winning sequence, expand more
-    # find the winning node
-    while len(frontier) > 0:
-        current_node = heapq.heappop(frontier)[1]
-        explored_nodes += [current_node]
+    best_actions = []  # initialise the best_actions with a dummy value so our loop doesnt kick up a fuss when we try to access the [0] index for the first time
+    best_score = LOST_GAME
+    actions = get_possible_actions(base_node.state, colour)
+    for action in actions:
+        current_node = apply_action(base_node, action, colour)
+        if current_node.value < best_score:
+            best_actions = [action]  # reset the list to have 1 action as the new best
+            best_score = current_node.value
+        elif current_node.value == best_score:
+            best_actions.append(action)
 
-        # go through the list of applicable BOOM actions and try them
-        for stack in current_node.state.white_stacks.items():
-            child_node = boom_action(current_node, stack[0])
-            # check if we're not adding an already visited state
-            if child_node.state not in [e.state for e in explored_nodes]:
-                explored_nodes += [child_node]
-                heapq.heappush(frontier, (child_node.f, child_node))
-            # check if we just won
-            if State.total_black(child_node.state) == 0:
-                winning_node = child_node
-                break
-        # break the while loop, because we've already found the winning_node
-        if winning_node is not None:
-            break
-        # go through the list of applicable MOVE actions and try them
-        # go through the squares where we have a stack
-        for stack in current_node.state.white_stacks.items():
-            # iterate through each possible number of pieces to move from our stack at the current occupied_square
-            for n_pieces in range(1, stack[1] + 1):
-                # possible moving directions
-                for move_direction in MOVE_DIRECTIONS:
-                    # number of squares to move n_pieces from current stack, 1 <= n_steps <= n_pieces
-                    for n_steps in range(1, stack[1] + 1):
-                        # check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of bounds and not landing on an enemy piece)
-                        if is_legal_move(current_node.state.black_stacks, stack[0], move_direction, n_steps):
-                            # make a child node that is the result of applying this move action to the current_node
-                            child_node = apply_action(current_node, stack[0], n_pieces, move_direction, n_steps)
-                            # make sure we're not duplicating states
-                            if child_node.state not in [e.state for e in explored_nodes]:
-                                explored_nodes += [child_node]
-                                heapq.heappush(frontier, (child_node.f, child_node))
+    # find the best action in those actions and return it. Break draws randomly
+    return random.choice(best_actions)
 
-    # we have the winning_node, now we calculate the sequence of moves made to get that node.
-    moves_made = []
-    curr = winning_node
-    while curr.parent is not None:
-        moves_made += [curr.move]
-        curr = curr.parent
-    return list(reversed(moves_made))
+
+def apply_action(base_node, action, colour):
+    """return a copy of the base_node after action has happened on it"""
+    if action[0] == MOVE:
+        return move_action(colour, base_node, action[1], action[2], action[3])
+    if action[0] == BOOM:
+        return boom_action(colour, base_node, action[1])
+    # else invalid action
+    return None
