@@ -6,6 +6,7 @@ from .aiutils import *
     ("BOOM", (x, y))
 """
 
+
 class RandomPlayer:
     def __init__(self, colour):
         """
@@ -65,6 +66,6 @@ class RandomPlayer:
         self.current_node = boom_action(colour, self.current_node, action[1])
         return
 
-    def get_colour(self):
+    def player_colour(self):
         """return the colour we were given to play"""
         return self.colour

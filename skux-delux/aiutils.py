@@ -32,10 +32,16 @@ class State:
     piece. The values associated with each x, y coordinate key is the integer number of pieces in that square.
     """
 
-    def __init__(self, white_stacks=START_WHITE_STACKS, black_stacks=START_BLACK_STACKS):
+    def __init__(self, white_stacks=None, black_stacks=None):
         # e.g. white_stacks = {(3,2): 1, (3,4): 3}
-        self.white_stacks = dict(white_stacks)
-        self.black_stacks = dict(black_stacks)
+        if white_stacks is None:
+            self.white_stacks = dict(START_WHITE_STACKS)
+        else:
+            self.white_stacks = dict(white_stacks)
+        if black_stacks is None:
+            self.black_stacks = dict(START_BLACK_STACKS)
+        else:
+            self.black_stacks = dict(black_stacks)
 
     def __eq__(self, other):
         return bool((self.white_stacks == other.white_stacks) and (self.black_stacks == other.black_stacks))
@@ -65,8 +71,11 @@ class State:
 class Node:
     """Node class for storing states and their values"""
 
-    def __init__(self, state=State(), value=0, parent=None, move=None, depth=0):
-        self.state = state
+    def __init__(self, state=None, value=0, parent=None, move=None, depth=0):
+        if state is None:
+            self.state = State()
+        else:
+            self.state = state
         self.value = value
         self.parent = parent
         self.move = move
@@ -148,17 +157,16 @@ def manhattan_dist(state):
     for white in state.white_stacks.items():
         current_total = 0
         for black in state.black_stacks.items():
-            current_total += (abs(white[0] - black[0]) + abs(white[1] - black[1]))
+            current_total += ( abs(white[0][0] - black[0][0]) + abs(white[0][1] - black[0][1]) )
         total += current_total / len(state.black_stacks)
     return total / len(state.white_stacks)
 
 
-"""NEED TO FIX THIS TO WORK WITH PLAYING AS WHITE OR BLACK"""
 def move_action(colour, base_node, n_pieces, stack, dest_square):
     """ apply a move action to the given base node by moving n_pieces from stack n_steps in move_direction
             returns new_node resulting from the move """
     # make a new node that is a copy of the base_node
-    new_node = Node(State(base_node.state.white_stacks.copy(), base_node.state.black_stacks.copy()))
+    new_node = Node(State(base_node.state.white_stacks, base_node.state.black_stacks))
 
     # adjust new_node fields according to how our move will change them:
     # parent node of the new_node is the base_node
@@ -170,29 +178,29 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
 
     # execute move on new_node state
     # move the pieces from the stack to a new stack
-    new_node.state.white_stacks[stack] -= n_pieces
-    if new_node.state.white_stacks[stack] == 0:
-        new_node.state.white_stacks.pop(stack)
-    if dest_square in new_node.state.white_stacks:
+    new_node.state.get_colour(colour)[stack] -= n_pieces
+    if new_node.state.get_colour(colour)[stack] == 0:
+        new_node.state.get_colour(colour).pop(stack)
+    if dest_square in new_node.state.get_colour(colour):
         # there is already a stack in the square we are moving to, just add number of pieces
-        new_node.state.white_stacks[dest_square] += n_pieces
+        new_node.state.get_colour(colour)[dest_square] += n_pieces
     else:
         # we have to make a new key value pair because we made a new stack
-        new_node.state.white_stacks[dest_square] = n_pieces
+        new_node.state.get_colour(colour)[dest_square] = n_pieces
 
     # update node value
     new_node.value = heuristic(colour, new_node.state)
 
     return new_node
 
-
+"""NEED TO FIX THIS TO WORK WITH PLAYING AS WHITE OR BLACK"""
 def move_action2(colour, base_node, stack, n_pieces, move):
     """ apply a move action to the given base node by moving n_pieces from stack n_steps in move_direction
             returns new_node resulting from the move """
     dest_square = (stack[0] + move[0], stack[1] + move[1])
 
     # make a new node that is a copy of the base_node
-    new_node = Node(State(base_node.state.white_stacks.copy(), base_node.state.black_stacks.copy()))
+    new_node = Node(State(base_node.state.white_stacks, base_node.state.black_stacks))
 
     # adjust new_node fields according to how our move will change them:
     # parent node of the new_node is the base_node
@@ -219,7 +227,7 @@ def move_action2(colour, base_node, stack, n_pieces, move):
 
     return new_node
 
-
+"""NEED TO FIX THIS TO WORK WITH PLAYING AS WHITE OR BLACK"""
 def move_action3(colour, base_node, stack, n_pieces, move_direction, n_steps):
     """ apply a move action to the given base node by moving n_pieces from stack n_steps in move_direction
         returns new_node resulting from the move """
@@ -256,7 +264,7 @@ def move_action3(colour, base_node, stack, n_pieces, move_direction, n_steps):
 
 def boom_action(colour, base_node, stack_to_boom):
     # make a new node that is a copy of the base_node
-    new_node = Node(State(base_node.state.white_stacks.copy(), base_node.state.black_stacks.copy()))
+    new_node = Node(State(base_node.state.white_stacks, base_node.state.black_stacks))
 
     # adjust new_node fields according to how the boom change them:
     # parent node of the new_node is the base_node
@@ -276,7 +284,7 @@ def boom_action(colour, base_node, stack_to_boom):
 
 
 def heuristic(colour, state):
-    if (state.total_black() == 0) and (state.total_black(state) == 0):
+    if (state.total_black() == 0) and (state.total_white() == 0):
         return DRAW
 
     if colour == WHITE:
