@@ -14,18 +14,18 @@ player package/class specifications (positional arguments):
   The first 2 arguments are 'package specifications'. These specify which Python
   package/module to import and search for a class named 'Player' (to instantiate
   for each player in the game). When we test your programs this will just be
-  your top-level package (i.e. 'skux_delux').
+  your top-level package (i.e. 'your_team_name').
 
   If you want to play games with another player class from another package (e.g.
   while you develop your player), you can use any absolute module name (as used
-  with import statements, e.g. 'skux_delux.player2') or relative path (to a
-  file or directory containing the Python module, e.g. 'skux_delux/player3'
-  or 'skux_delux/players/player4.py').
+  with import statements, e.g. 'your_team_name.player2') or relative path (to a
+  file or directory containing the Python module, e.g. 'your_team_name/player3'
+  or 'your_team_name/players/player4.py').
 
   Either way, the referee will attempt to import the specified package/module
   and then load a class named 'Player'. If you want the referee to look for a
   class with some other name you can put the alternative class name after a ':'
-  (e.g. 'skux_delux:DifferentPlayer').
+  (e.g. 'your_team_name:DifferentPlayer').
 
   white                 location of White's Player class (e.g. package name)
   black                 location of Black's Player class (e.g. package name)
@@ -68,7 +68,7 @@ from referee.game import GAME_NAME, COLOURS, NUM_PLAYERS
 
 # Program information:
 PROGRAM = "referee"
-VERSION = "1.0 (released DD MMM 2020)"
+VERSION = "1.1"
 DESCRIP = \
 f"conducts a game of {GAME_NAME} between {NUM_PLAYERS} Player classes."
 
@@ -103,18 +103,18 @@ PKG_SPEC_HELP = """
 The first {} arguments are 'package specifications'. These specify which Python
 package/module to import and search for a class named 'Player' (to instantiate
 for each player in the game). When we test your programs this will just be
-your top-level package (i.e. 'skux_delux').
+your top-level package (i.e. 'your_team_name').
 
 If you want to play games with another player class from another package (e.g.
 while you develop your player), you can use any absolute module name (as used
-with import statements, e.g. 'skux_delux.player2') or relative path (to a
-file or directory containing the Python module, e.g. 'skux_delux/player3'
-or 'skux_delux/players/player4.py').
+with import statements, e.g. 'your_team_name.player2') or relative path (to a
+file or directory containing the Python module, e.g. 'your_team_name/player3'
+or 'your_team_name/players/player4.py').
 
 Either way, the referee will attempt to import the specified package/module
 and then load a class named 'Player'. If you want the referee to look for a
 class with some other name you can put the alternative class name after a ':'
-(e.g. 'skux_delux:DifferentPlayer').
+(e.g. 'your_team_name:DifferentPlayer').
 """.format(NUM_PLAYERS)
 
 def get_options():
