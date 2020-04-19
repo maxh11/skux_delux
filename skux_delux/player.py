@@ -34,7 +34,7 @@ class SkuxPlayer:
         represented based on the spec's instructions for representing actions.
         """
         # TODO: Decide what action to take, and return it
-        return alpha_beta_search(self.current_node, self.colour)
+        return alpha_beta_search(self.current_node, self.colour, budget)
 
     def update(self, colour, action):
         """

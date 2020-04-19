@@ -1,6 +1,5 @@
 import random
 import sys
-import heapq
 
 LEFT = (-1, 0)
 RIGHT = (1, 0)
@@ -216,14 +215,14 @@ def boom_action(colour, base_node, stack_to_boom):
 
     return new_node
 
-def alpha_beta_search(base_node, colour):
+def alpha_beta_search(base_node, colour, budget):
     best_val = -INFINITY
     beta = INFINITY
     best_node = None
     actions = get_possible_actions(base_node.state, colour)
     for action in actions:
         current_node = apply_action(base_node, action, colour)
-        value = min_value(current_node, best_val, beta, colour)
+        value = max_value(current_node, best_val, beta, colour)
         if value > best_val:
             best_val = value
             best_node = current_node
@@ -263,7 +262,7 @@ def propagateBack(current_node):
 
 def heuristic(colour, state):
     if (state.total_black() == 0) and (state.total_white() == 0):
-        return DRAW
+        return DRAW_GAME
 
     if colour == WHITE:
         if state.total_black() == 0:
