@@ -1,5 +1,14 @@
+import random
+from .aiutils import *
 
-class ExamplePlayer:
+"""Actions syntax:
+    ("MOVE", n, (xa, ya), (xb, yb))
+    ("BOOM", (x, y))
+"""
+
+budget = 10
+
+class SkuxPlayer:
     def __init__(self, colour):
         """
         This method is called once at the beginning of the game to initialise
@@ -9,23 +18,23 @@ class ExamplePlayer:
 
         The parameter colour will be a string representing the player your 
         program will play as (White or Black). The value will be one of the 
-        strings "white" or "black" correspondingly.
+
+
+        Based on the current state of the game, your player should select and 
+        return an allowed action to play o      strings "white" or "black" correspondingly.
         """
         # TODO: Set up state representation.
-
+        self.current_node = Node()
+        self.colour = colour
 
     def action(self):
         """
-        This method is called at the beginning of each of your turns to request 
-        a choice of action from your program.
-
-        Based on the current state of the game, your player should select and 
-        return an allowed action to play on this turn. The action must be
+        This method is called at the beginning of each of your turns to request
+        a choice of action from your program.n this turn. The action must be
         represented based on the spec's instructions for representing actions.
         """
         # TODO: Decide what action to take, and return it
-        return ("BOOM", (0, 0))
-
+        return alpha_beta_search(self.current_node, self.colour)
 
     def update(self, colour, action):
         """
@@ -46,3 +55,4 @@ class ExamplePlayer:
         against the game rules).
         """
         # TODO: Update state representation in response to action.
+        self.current_node = apply_action(self.current_node, action, colour)

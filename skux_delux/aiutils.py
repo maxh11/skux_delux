@@ -10,8 +10,8 @@ MOVE_DIRECTIONS = [LEFT, RIGHT, UP, DOWN]
 
 # values for the heuristic
 INFINITY = sys.maxsize
-LOST_GAME = sys.maxsize
-WIN_GAME = -sys.maxsize
+LOST_GAME = -INFINITY
+WIN_GAME = INFINITY
 DRAW_GAME = LOST_GAME / 2
 
 MOVE = "MOVE"
@@ -216,36 +216,79 @@ def boom_action(colour, base_node, stack_to_boom):
 
     return new_node
 
+def alpha_beta_search(base_node, colour):
+    best_val = -INFINITY
+    beta = INFINITY
+    best_node = None
+    actions = get_possible_actions(base_node.state, colour)
+    for action in actions:
+        current_node = apply_action(base_node, action, colour)
+        value = min_value(current_node, best_val, beta, colour)
+        if value > best_val:
+            best_val = value
+            best_node = current_node
+    best_node = propagateBack(best_node)
+    return best_node.move
+
+def max_value(base_node, alpha, beta, colour):
+    if base_node.depth == 0 or base_node.state.total_black() == 0 or base_node.state.total_white() == 0:
+        return heuristic(colour, base_node.state)
+    value = -INFINITY
+    actions = get_possible_actions(base_node.state, colour)
+    for action in actions:
+        current_node = apply_action(base_node, action, colour)
+        value = max(value, min_value(current_node, alpha, beta, colour))
+        if value >= beta:
+            return value
+        alpha = max(alpha, value)
+    return value
+
+def min_value(base_node, alpha, beta, colour):
+    if base_node.depth == 0 or base_node.state.total_black() == 0 or base_node.state.total_white() == 0:
+        return heuristic(colour, base_node.state)
+    value = INFINITY
+    actions = get_possible_actions(base_node.state, colour)
+    for action in actions:
+        current_node = apply_action(base_node, action, colour)
+        value = min(value, max_value(current_node, alpha, beta, colour))
+        if value <= alpha:
+            return value
+        beta = min(beta, value)
+    return value
+
+def propagateBack(current_node):
+    while current_node is not None:
+        current_node = current_node.parent
+    return current_node
 
 def heuristic(colour, state):
     if (state.total_black() == 0) and (state.total_white() == 0):
-        return DRAW_GAME
+        return DRAW
 
     if colour == WHITE:
         if state.total_black() == 0:
             # win game
-            return WIN_GAME
+            return INFINITY
         if state.total_white() == 0:
             # lost game
-            return LOST_GAME
+            return -INFINITY
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
-        # distance, **lower** is better
-        return state.total_black() - state.total_white() + manhattan_dist(state)
+        # distance, higher is better
+        return state.total_white() - state.total_black() + manhattan_dist(state)
 
     if colour == BLACK:
         if state.total_white() == 0:
             # win game
-            return WIN_GAME
+            return INFINITY
         if state.total_black() == 0:
             # lost game
-            return LOST_GAME
+            return -INFINITY
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
-        # distance, **lower** is better
-        return state.total_white() - state.total_black() + manhattan_dist(state)
+        # distance, higher is better
+        return state.total_black() - state.total_white() + manhattan_dist(state)
 
     # else, incorrect colour given return None
     return None
-
 
 def chain_boom(state, stack_to_boom, stacks_to_remove=None):
     # add the stack_to_boom to the stacks_to_remove
@@ -307,48 +350,6 @@ def get_best_action(base_node, colour, budget):
 
     # find the best action in those actions and return it. Break draws randomly
     return random.choice(best_actions)
-
-def alpha_beta_search(self, base_node):
-    best_val = -INFINITY
-    beta = INFINITY
-    best_node = None
-    actions = get_possible_actions(base_node.state, colour)
-    for action in actions:
-        current_node = apply_action(base_node, action, colour)
-        value = self.min_value(current_node, best_val, beta)
-        if value > best_val:
-            best_val = value
-            best_node = current_node
-    return best_node
-
-def max_value(self, base_node, alpha, beta, colour):
-    if base_node.state.depth == 0 or State.total_black(base_node.state) == 0 or State.total_white(base_node.state) == 0:
-        return heuristic(colour, base_node.state)
-    value = INFINITY
-    actions = get_possible_actions(base_node.state, colour)
-    for action in actions:
-        current_node = apply_action(base_node, action, colour)
-        value = max(value, self.min_value(current_node, alpha, beta, colour))
-        if value >= beta:
-            return value
-        alpha = max(alpha, value)
-    return value
-
-def min_value(self, base_node, alpha, beta, colour):
-    if base_node.state.depth == 0 or State.total_black(base_node.state) == 0 or State.total_white(base_node.state) == 0:
-        return heuristic(colour, base_node.state)
-    value = -INFINITY
-    actions = get_possible_actions(base_node.state, colour)
-    for action in actions:
-        current_node = apply_action(base_node, action, colour)
-        value = min(value, self.max_value(current_node, alpha, beta, colour))
-        if value <= alpha:
-            return value
-        beta = min(beta, value)
-    return value
-
-
-
 
 def apply_action(base_node, action, colour):
     """return a copy of the base_node after action has happened on it"""
