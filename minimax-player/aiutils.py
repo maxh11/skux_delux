@@ -69,6 +69,8 @@ class State:
         the return type is a list of (x, y) tuples where there are 'colour' pieces"""
         return list(self.get_colour(colour).keys())
 
+    def copy(self):
+        return State(self.white_stacks, self.black_stacks)
 
 class Node:
     """Node class for storing states and their values. A node will """
@@ -333,8 +335,34 @@ def apply_action(base_node, action, colour):
     return None
 
 
+def state_after_action(state, action, colour):
+    return apply_action(Node(state), action, colour).state
+
+
 def is_game_over(state):
     return bool(state.total_black() == 0 or state.total_white() == 0)
+
+
+def get_leaves()
+
+
+class Tree:
+    def __init__(self):
+
+
+class Node:
+    def __init__(self, last_player, state):
+        self.last_player = last_player
+        self.player_to_move = opponent(last_player)
+
+        self.value = heuristic(last_player, state)
+        self.white_value = heuristic(WHITE, state)
+        self.black_value = heuristic(BLACK, state)
+
+        self.move = None
+        self.children = []
+
+    def apply_action(self, player, action):
 
 
 def get_child_nodes(base_node):
@@ -356,21 +384,31 @@ class MMnode:
         self.children = []
 
     def apply_action(self, action, state):
-        new_node = MMnode(state, opponent(self.player_to_move), )
+        return MMnode(state_after_action(state, action, self.player_to_move), opponent(self.player_to_move),
+                      self.depth - 1)
 
 
-def build_tree(base_MMnode, base_Nonde, depth_left):
-    if depth_left == 0 or is_game_over(base_Nonde.state):
-        return None
-    child_positions = get_child_nodes(base_MMnode)
+def build_tree(base_MMnode, base_node, depth_left):
+    if depth_left == 0 or is_game_over(base_node.state):
+        return
+    child_positions = get_child_nodes(base_node)
     for child in child_positions:
-        base_MMnode.children.append(MMnode(heuristic()))
-        build_tree(base_MMnode.children[-1])
+        base_MMnode.children.append(
+            MMnode(base_node.state.copy(), opponent(base_MMnode.player_to_move), depth_left - 1))
+        build_tree(base_MMnode.children[-1], child.copy(), depth_left - 1)
 
 
-def get_minimax_action(base_node, budget):
+def get_minimax_action(base_node, budget, colour):
     # NOTE: player_to_move = opponent(base_node.last_player)
-    tree_base = MMnode()
+    tree_base = MMnode(base_node.state, colour, budget)
+    build_tree(tree_base, base_node, budget)
+
+    # get min
+
+    return
+
+    """
+    tree_base = MMnode(base_node.state, colour, budget)
     build_tree(tree_base, base_node, budget)
 
     best_score = LOST_GAME
@@ -387,7 +425,7 @@ def get_minimax_action(base_node, budget):
         elif evalu == best_score:
             best_actions.append(position.move)
     return random.choice(best_actions)
-
+    """
 
 def minimax(base_node, depth, maximising_player):
     if depth == 0 or is_game_over(base_node.state):
