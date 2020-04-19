@@ -68,9 +68,9 @@ from referee.game import GAME_NAME, COLOURS, NUM_PLAYERS
 
 # Program information:
 PROGRAM = "referee"
-VERSION = "1.0 (released DD MMM 2020)"
+VERSION = "1.1"
 DESCRIP = \
-f"conducts a game of {GAME_NAME} between {NUM_PLAYERS} Player classes."
+    f"conducts a game of {GAME_NAME} between {NUM_PLAYERS} Player classes."
 
 WELCOME = \
 f"""******************************************************************

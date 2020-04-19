@@ -156,9 +156,9 @@ class _MemoryWatcher:
                 f"{peak_usage:7.3f}MB (max usage) (shared)")
 
             # if we are limited, let's hope we are not out of space!
-            if self.limit is not None and peak_usage > self.limit:
+            if self.limit is not None and self.limit > 0 and peak_usage > self.limit:
                 raise ResourceLimitException("players exceeded shared space "
-                    "limit")
+                                             "limit")
 
 def _get_space_usage():
     """

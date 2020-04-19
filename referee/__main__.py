@@ -8,7 +8,6 @@ from referee.game import play, IllegalActionException
 from referee.player import PlayerWrapper, ResourceLimitException, set_space_line
 from referee.options import get_options
 
-
 def main():
     # Parse command-line options into a namespace for use throughout this
     # program
@@ -62,7 +61,6 @@ def main():
         out.comment(e)
     # If it's another kind of error then it might be coming from the player
     # itself? Then, a traceback will be more helpful.
-
 
 if __name__ == '__main__':
     main()
