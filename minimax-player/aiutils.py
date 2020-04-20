@@ -53,6 +53,13 @@ class State:
     def total_black(self):
         return sum(self.black_stacks.values())
 
+    def total_pieces(self, colour=None):
+        if colour is None:
+            return self.total_black() + self.total_white()
+        if colour == WHITE:
+            return self.total_white()
+        return self.total_black()
+
     def get_colour(self, colour):
         """returns the dictionary of stacks for colour='white' or colour='black' """
         if colour == WHITE:
@@ -70,6 +77,7 @@ class State:
 
     def copy(self):
         return State(self.white_stacks, self.black_stacks)
+
 
 
 class Node:
@@ -257,7 +265,7 @@ def heuristic(colour, state):
             return LOST_GAME
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
         # distance, **higer** is better
-        return state.total_white() - state.total_black() - manhattan_dist(state)
+        return state.total_white() - state.total_black()  # - manhattan_dist(state)
 
     if colour == BLACK:
         if state.total_white() == 0:
@@ -268,7 +276,7 @@ def heuristic(colour, state):
             return LOST_GAME
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
         # distance, **higer** is better
-        return state.total_black() - state.total_white() - manhattan_dist(state)
+        return state.total_black() - state.total_white()  #- manhattan_dist(state)
 
     # else, incorrect colour given return None
     return None
@@ -329,6 +337,7 @@ def get_greedy_action(colour, base_node, budget):
     actions = base_node.get_possible_actions(colour)
     for action in actions:
         current_node = base_node.apply_action(colour, action)
+        current_node.value -= manhattan_dist(current_node.state)
         if current_node.value > best_score:
             best_actions = [action]  # reset the list to have 1 action as the new best
             best_score = current_node.value
@@ -397,9 +406,12 @@ def get_alphabeta_action(colour, node, budget):
     moves = {}
     for i in range(len(first_moves)):
         child = first_moves[i]
-        value = minimax(child, 2, -INFINITY, INFINITY, False)
-        moves[value] = child.move
-    return moves[max(moves)]
+        value = minimax(child, budget, -INFINITY, INFINITY, False)
+        if value in moves:
+            moves[value].append(child.move)
+        else:
+            moves[value] = [child.move]
+    return random.choice(moves[max(moves)])
 
 
 def minimax(node, depth, alpha, beta, maximising_player):

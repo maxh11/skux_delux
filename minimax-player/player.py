@@ -6,7 +6,7 @@ from .aiutils import *
     ("BOOM", (x, y))
 """
 
-budget = 3
+budget = 2
 
 
 class MinimaxPlayer:
@@ -39,7 +39,9 @@ class MinimaxPlayer:
         """
         # TODO: Decide what action to take, and return it
         # this player of ours will just pick a random one
-        return get_alphabeta_action(self.colour, self.current_node, 4)
+        if self.current_node.state.total_pieces() > 18:
+            return get_greedy_action(self.colour, self.current_node, budget)
+        return get_alphabeta_action(self.colour, self.current_node, budget)
 
     def update(self, colour, action):
         """
