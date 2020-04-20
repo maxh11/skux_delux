@@ -24,8 +24,9 @@ class MinimaxPlayer:
         # TODO: Set up state representation.
 
         # set up our current node and
-        self.current_node = init_node(colour)
+        self.current_node = Node()
         self.colour = colour
+        print({WHITE: heuristic(WHITE, self.current_node.state), BLACK: heuristic(BLACK, self.current_node.state)})
 
     def action(self):
         """
@@ -38,7 +39,7 @@ class MinimaxPlayer:
         """
         # TODO: Decide what action to take, and return it
         # this player of ours will just pick a random one
-        return get_minimax_action(self.current_node, 2)
+        return get_alphabeta_action(self.colour, self.current_node, 4)
 
     def update(self, colour, action):
         """
@@ -59,4 +60,5 @@ class MinimaxPlayer:
         against the game rules).
         """
         # TODO: Update state representation in response to action.
-        self.current_node = apply_action(self.current_node, action, colour)
+        self.current_node = self.current_node.apply_action(colour, action)
+        # print({WHITE: heuristic(WHITE, self.current_node.state), BLACK: heuristic(BLACK, self.current_node.state)})

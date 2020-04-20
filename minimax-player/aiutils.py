@@ -1,6 +1,5 @@
 import random
 import sys
-import heapq
 
 LEFT = (-1, 0)
 RIGHT = (1, 0)
@@ -72,32 +71,21 @@ class State:
     def copy(self):
         return State(self.white_stacks, self.black_stacks)
 
+
 class Node:
-    """Node class for storing states and their values. A node will """
+    """Node class for storing states and their values"""
 
-    def __init__(self, state=None, last_player=None, parent=None, move=None, depth=0):
+    def __init__(self, state=None, value=0, parent=None, move=None, depth=0):
         if state is None:
-            self.state = State()  # empty state
-            # self.last_player = last_player  # white turn is first, so assume last_player was black at the start of a game
-            # self.player_to_move = opponent(last_player)
-            self.depth = depth  # = 0
-            self.move = move  # = None
-            self.parent = parent  # = None
-            # self.value = heuristic(opponent(self.last_player), self.state)  # should be 0, but it doesnt matter
+            self.state = State()
+            self.last_colour = BLACK
         else:
-            self.state = State(state.white_stacks, state.black_stacks)  # copy of the state passed in args
-            self.last_player = last_player
-            self.player_to_move = opponent(self.last_player)
-            self.value = heuristic(self.player_to_move, self.state)
-            self.parent = parent
-            self.move = move
-            self.depth = depth
-
-    def opponent_copy(self):
-        return Node(self.state, self.player_to_move, self.parent, self.move, self.depth)
-
-    def copy(self):
-        return Node(self.state, self.last_player, self.parent, self.move, self.depth)
+            self.state = State(state.white_stacks, state.black_stacks)
+        self.value = value
+        self.parent = parent
+        self.move = move
+        self.depth = depth
+        self.last_colour = None
 
     # these functions are for comparing the scores (or 'value') associated with each node
     def __lt__(self, other):
@@ -117,35 +105,56 @@ class Node:
     def __eq__(self, other):
         return self.state == other.state
 
+    def copy(self):
+        copy_node = Node(self.state, self.value, self.parent, self.move, self.depth)
+        copy_node.last_colour = self.last_colour
+        return copy_node
 
-def get_possible_actions(state, colour):
-    """Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
-    [(BOOM, (0, 2)), (BOOM, (0, 1)), (MOVE, 2, (0, 1), (2, 1)), (MOVE, 1, (7, 5), (7, 6)) ... etc]
-    """
-    # array of actions which we will return after we have filled it with possible (legal) moves
-    actions = []
+    def apply_action(self, colour, action):
+        """return a copy of the base_node after action has happened on it"""
+        if action[0] == MOVE:
+            return move_action(colour, self, action[1], action[2], action[3])
+        if action[0] == BOOM:
+            return boom_action(colour, self, action[1])
+        # else invalid action
+        print("INVALID ACTION GIVEN TO .apply_action() in aiutils.py\n")
+        return None
 
-    # go through the list of applicable BOOM actions and add them to actions[]
-    squares = state.get_squares(colour)
-    for stack in squares:
-        actions.append((BOOM, stack))
+    def get_possible_actions(self, colour):
+        """Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
+        [(BOOM, (0, 2)), (BOOM, (0, 1)), (MOVE, 2, (0, 1), (2, 1)), (MOVE, 1, (7, 5), (7, 6)) ... etc]
+        """
+        # array of actions which we will return after we have filled it with possible (legal) moves
+        actions = []
 
-    # go through the list of applicable MOVE actions
-    # for each item from .items() from a stack dictionary, item[0] is the (x, y) coordinates of of the stack and
-    # item[1] is the number of pieces in the stack
-    for stack in state.get_colour(colour).items():
-        # iterate through each possible number of pieces to move from our stack at the current occupied_square
-        for n_pieces in range(1, stack[1] + 1):
-            # possible moving directions
-            for move_direction in MOVE_DIRECTIONS:
-                # number of squares to move n_pieces from current stack, 1 <= n_steps <= n_pieces
-                for n_steps in range(1, stack[1] + 1):
-                    # check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of
-                    # bounds and not landing on an enemy piece)
-                    if is_legal_move(state.get_squares(opponent(colour)), stack[0], move_direction, n_steps):
-                        final_square = calculate_dest_square(stack[0], move_direction, n_steps)
-                        actions.append((MOVE, n_pieces, stack[0], final_square))
-    return actions
+        # go through the list of applicable BOOM actions and add them to actions[]
+        squares = self.state.get_squares(colour)
+        for stack in squares:
+            actions.append((BOOM, stack))
+
+        # go through the list of applicable MOVE actions
+        # for each item from .items() from a stack dictionary, item[0] is the (x, y) coordinates of of the stack and
+        # item[1] is the number of pieces in the stack
+        for stack in self.state.get_colour(colour).items():
+            # iterate through each possible number of pieces to move from our stack at the current occupied_square
+            for n_pieces in range(1, stack[1] + 1):
+                # possible moving directions
+                for move_direction in MOVE_DIRECTIONS:
+                    # number of squares to move n_pieces from current stack, 1 <= n_steps <= n_pieces
+                    for n_steps in range(1, stack[1] + 1):
+                        # check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of
+                        # bounds and not landing on an enemy piece)
+                        if is_legal_move(self.state.get_squares(opponent(colour)), stack[0], move_direction, n_steps):
+                            final_square = calculate_dest_square(stack[0], move_direction, n_steps)
+                            actions.append((MOVE, n_pieces, stack[0], final_square))
+        return actions
+
+    def get_children(self, colour):
+        children = []
+        actions = self.get_possible_actions(colour)
+        for action in actions:
+            children.append(self.apply_action(colour, action))
+        return children
 
 
 def is_legal_move(enemy_stack_locations, moving_stack_location, move_direction, n_steps):
@@ -184,7 +193,7 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
     """ apply a move action to the given base node by moving n_pieces from stack n_steps in move_direction
             returns new_node resulting from the move """
     # make a new node that is a copy of the base_node. Set last_player to current colour making the move
-    new_node = Node(base_node.state, colour)
+    new_node = base_node.copy()
     # adjust new_node fields according to how our move will change them:
     # parent node of the new_node is the base_node
     new_node.parent = base_node
@@ -192,6 +201,7 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
     new_node.depth = base_node.depth + 1
     # store the move which got us to new_node
     new_node.move = (MOVE, n_pieces, stack, dest_square)
+    new_node.last_colour = colour
 
     # execute move on new_node state
     # move the pieces from the stack to a new stack
@@ -214,7 +224,7 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
 
 def boom_action(colour, base_node, stack_to_boom):
     # make a new node that is a copy of the base_node
-    new_node = Node(base_node.state, colour)
+    new_node = base_node.copy()
 
     # adjust new_node fields according to how the boom change them:
     # parent node of the new_node is the base_node
@@ -223,6 +233,7 @@ def boom_action(colour, base_node, stack_to_boom):
     new_node.depth = base_node.depth + 1
     # store the move which got us to new_node
     new_node.move = (BOOM, stack_to_boom)
+    new_node.last_colour = colour
 
     # recursive boom at the new_node.state starting at 'stack', this updates the state
     new_node.state = chain_boom(new_node.state, stack_to_boom)
@@ -263,6 +274,10 @@ def heuristic(colour, state):
     return None
 
 
+def is_game_over(state):
+    return bool(state.total_black() == 0 or state.total_white() == 0)
+
+
 def chain_boom(state, stack_to_boom, stacks_to_remove=None):
     # add the stack_to_boom to the stacks_to_remove
     if stacks_to_remove is None:
@@ -300,7 +315,7 @@ def chain_boom(state, stack_to_boom, stacks_to_remove=None):
     return state
 
 
-def get_greedy_action(base_node, colour, budget):
+def get_greedy_action(colour, base_node, budget):
     """returns the action associated with the best score achieved after that action is enacted on our current_node.state
     Note: because python uses a min-heap for their priority queue implementation, better scores are lower, the lower the score the better its value"""
 
@@ -309,13 +324,12 @@ def get_greedy_action(base_node, colour, budget):
 
     # make a copy of the initial node we were given
     # base_node = Node(current_node.state)
-
     best_actions = []  # initialise the best_actions with a dummy value so our loop doesnt kick up a fuss when we try to access the [0] index for the first time
     best_score = LOST_GAME
-    actions = get_possible_actions(base_node.state, colour)
+    actions = base_node.get_possible_actions(colour)
     for action in actions:
-        current_node = apply_action(base_node, action, colour)
-        if current_node.value < best_score:
+        current_node = base_node.apply_action(colour, action)
+        if current_node.value > best_score:
             best_actions = [action]  # reset the list to have 1 action as the new best
             best_score = current_node.value
         elif current_node.value == best_score:
@@ -325,134 +339,91 @@ def get_greedy_action(base_node, colour, budget):
     return random.choice(best_actions)
 
 
-def apply_action(base_node, action, colour):
-    """return a copy of the base_node after action has happened on it"""
-    if action[0] == MOVE:
-        return move_action(colour, base_node, action[1], action[2], action[3])
-    if action[0] == BOOM:
-        return boom_action(colour, base_node, action[1])
-    # else invalid action
-    return None
-
-
-def state_after_action(state, action, colour):
-    return apply_action(Node(state), action, colour).state
-
-
-def is_game_over(state):
-    return bool(state.total_black() == 0 or state.total_white() == 0)
-
-
-def get_leaves()
-
-
-class Tree:
-    def __init__(self):
-
-
-class Node:
-    def __init__(self, last_player, state):
-        self.last_player = last_player
-        self.player_to_move = opponent(last_player)
-
-        self.value = heuristic(last_player, state)
-        self.white_value = heuristic(WHITE, state)
-        self.black_value = heuristic(BLACK, state)
-
-        self.move = None
-        self.children = []
-
-    def apply_action(self, player, action):
-
-
-def get_child_nodes(base_node):
-    """return an array of child nodes. That is, all the possible nodes resulting from legal actions from the current node"""
-    legal_actions = get_possible_actions(base_node.state, opponent(base_node.last_player))
-    children = []
-    for action in legal_actions:
-        children.append(apply_action(base_node, action, opponent(base_node.last_player)))
-    return children
-
-
-class MMnode:
-    def __init__(self, state, player_to_move=None, depth=None):
-        self.white_value = heuristic(WHITE, state)
-        self.black_value = heuristic(BLACK, state)
-
-        self.player_to_move = player_to_move
-        self.depth = depth
-        self.children = []
-
-    def apply_action(self, action, state):
-        return MMnode(state_after_action(state, action, self.player_to_move), opponent(self.player_to_move),
-                      self.depth - 1)
-
-
-def build_tree(base_MMnode, base_node, depth_left):
-    if depth_left == 0 or is_game_over(base_node.state):
-        return
-    child_positions = get_child_nodes(base_node)
-    for child in child_positions:
-        base_MMnode.children.append(
-            MMnode(base_node.state.copy(), opponent(base_MMnode.player_to_move), depth_left - 1))
-        build_tree(base_MMnode.children[-1], child.copy(), depth_left - 1)
-
-
-def get_minimax_action(base_node, budget, colour):
-    # NOTE: player_to_move = opponent(base_node.last_player)
-    tree_base = MMnode(base_node.state, colour, budget)
-    build_tree(tree_base, base_node, budget)
-
-    # get min
-
-    return
-
-    """
-    tree_base = MMnode(base_node.state, colour, budget)
-    build_tree(tree_base, base_node, budget)
-
+def get_minimax_action(colour, base_node, budget):
+    best_actions = []  # initialise the best_actions with a dummy value so our loop doesnt kick up a fuss when we try to access the [0] index for the first time
     best_score = LOST_GAME
-    best_actions = []
+    actions = base_node.get_possible_actions(colour)
+    for action in actions:
+        current_node = base_node.apply_action(colour, action)
+        minimax_evlu = minimax(current_node, budget, False, opponent(colour))[colour]
+        if minimax_evlu > best_score:
+            best_actions = [action]  # reset the list to have 1 action as the new best
+            best_score = minimax_evlu
+        elif minimax_evlu == best_score:
+            best_actions.append(action)
 
-    child_positions = get_child_nodes(base_node)
-    for position in child_positions:
-        evalu = minimax(position, budget, False)
-        # print("hi after minimax\n")
-
-        if evalu > best_score:
-            best_actions = [position.move]  # reset the list to have 1 action as the new best
-            best_score = evalu
-        elif evalu == best_score:
-            best_actions.append(position.move)
+    # find the best action in those actions and return it. Break draws randomly
     return random.choice(best_actions)
-    """
 
-def minimax(base_node, depth, maximising_player):
-    if depth == 0 or is_game_over(base_node.state):
-        return base_node.value
+
+# returns {WHITE: white heuristic, BLACK: black heuristic}
+# node = 'current node being worked on'
+# depth = the amount of depth we have left to explore
+# colour = the current players turn
+"""
+def minimax(node, depth, maximising_player, colour):
+    if depth == 0 or is_game_over(node.state):
+        # print({WHITE: heuristic(WHITE, node.state), BLACK: heuristic(BLACK, node.state)})
+        return {WHITE: heuristic(WHITE, node.state), BLACK: heuristic(BLACK, node.state)}
+
     if maximising_player:
-        max_evalu = LOST_GAME
-        children = get_child_nodes(base_node)
-        for child in children:
-            evalu = minimax(child, depth - 1, False)
-            max_evalu = max(max_evalu, evalu)
-        return max_evalu
+        best_value = {colour: LOST_GAME, opponent(colour): WIN_GAME}
+        actions = node.get_possible_actions(colour)
+        for action in actions:
+            current_node = node.apply_action(colour, action)
+            tmp = minimax(current_node, depth - 1, False, opponent(colour))
+            if tmp[colour] > best_value[colour]:
+                best_value[colour] = tmp[colour]
+                best_value[opponent(colour)] = tmp[opponent(colour)]
+        return best_value
     else:
-        min_evalu = WIN_GAME
-        children = get_child_nodes(base_node)
-        for child in children:
-            evalu = minimax(child, depth - 1, True)
-            min_evalu = min(evalu, min_evalu)
-        return min_evalu
-
-
-def init_node(colour):
-    """return a brand new node for the start of the game"""
-
-    return Node(State(), opponent(colour), None, None, 0)
-
+        best_value = {colour: WIN_GAME, opponent(colour): LOST_GAME}
+        actions = node.get_possible_actions(colour)
+        for action in actions:
+            current_node = node.apply_action(colour, action)
+            tmp = minimax(current_node, depth - 1, True, opponent(colour))
+            if tmp[colour] < best_value[colour]:
+                best_value[colour] = tmp[colour]
+                best_value[opponent(colour)] = tmp[opponent(colour)]
+        return best_value
 
 """
-class Action:
-    def __init__(self, colour_moving, resulting_state):
-"""
+
+
+def get_alphabeta_action(colour, node, budget):
+    current_node = node.copy()
+    first_moves = current_node.get_children(colour)
+
+    moves = {}
+    for i in range(len(first_moves)):
+        child = first_moves[i]
+        value = minimax(child, 2, -INFINITY, INFINITY, False)
+        moves[value] = child.move
+    return moves[max(moves)]
+
+
+def minimax(node, depth, alpha, beta, maximising_player):
+    if depth == 0:
+        return heuristic(node.last_colour, node.state)
+    current_node = node.copy()
+
+    if maximising_player:
+        max_eval = -INFINITY
+        children = current_node.get_children(opponent(current_node.last_colour))
+        for i in range(len(children)):
+            ev = minimax(children[i], depth - 1, alpha, beta, False)
+            max_eval = max(max_eval, ev)
+            alpha = max(alpha, ev)
+            if beta <= alpha:
+                break
+        return max_eval
+    else:
+        min_eval = INFINITY
+        children = current_node.get_children(opponent(current_node.last_colour))
+        for i in range(len(children)):
+            ev = minimax(children[i], depth - 1, alpha, beta, True)
+            min_eval = min(min_eval, ev)
+            beta = min(beta, ev)
+            if beta <= alpha:
+                break
+        return min_eval

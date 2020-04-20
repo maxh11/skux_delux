@@ -1,6 +1,5 @@
 import random
 import sys
-import heapq
 
 LEFT = (-1, 0)
 RIGHT = (1, 0)
@@ -10,8 +9,8 @@ MOVE_DIRECTIONS = [LEFT, RIGHT, UP, DOWN]
 
 # values for the heuristic
 INFINITY = sys.maxsize
-LOST_GAME = sys.maxsize
-WIN_GAME = -sys.maxsize
+LOST_GAME = -INFINITY
+WIN_GAME = INFINITY
 DRAW_GAME = LOST_GAME / 2
 
 MOVE = "MOVE"
@@ -68,6 +67,9 @@ class State:
         Since the keys of the stack dictionaries are the (x, y) coordinates where there are at least 1 piece,
         the return type is a list of (x, y) tuples where there are 'colour' pieces"""
         return list(self.get_colour(colour).keys())
+
+    def copy(self):
+        return State(self.white_stacks, self.black_stacks)
 
 
 class Node:
@@ -167,7 +169,7 @@ def manhattan_dist(state):
 def move_action(colour, base_node, n_pieces, stack, dest_square):
     """ apply a move action to the given base node by moving n_pieces from stack n_steps in move_direction
             returns new_node resulting from the move """
-    # make a new node that is a copy of the base_node
+    # make a new node that is a copy of the base_node. Set last_player to current colour making the move
     new_node = Node(base_node.state)
     # adjust new_node fields according to how our move will change them:
     # parent node of the new_node is the base_node
@@ -229,8 +231,8 @@ def heuristic(colour, state):
             # lost game
             return LOST_GAME
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
-        # distance, **lower** is better
-        return state.total_black() - state.total_white() + manhattan_dist(state)
+        # distance, **higer** is better
+        return state.total_white() - state.total_black() - manhattan_dist(state)
 
     if colour == BLACK:
         if state.total_white() == 0:
@@ -240,8 +242,8 @@ def heuristic(colour, state):
             # lost game
             return LOST_GAME
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
-        # distance, **lower** is better
-        return state.total_white() - state.total_black() + manhattan_dist(state)
+        # distance, **higer** is better
+        return state.total_black() - state.total_white() - manhattan_dist(state)
 
     # else, incorrect colour given return None
     return None
@@ -299,7 +301,7 @@ def get_greedy_action(base_node, colour, budget):
     actions = get_possible_actions(base_node.state, colour)
     for action in actions:
         current_node = apply_action(base_node, action, colour)
-        if current_node.value < best_score:
+        if current_node.value > best_score:
             best_actions = [action]  # reset the list to have 1 action as the new best
             best_score = current_node.value
         elif current_node.value == best_score:
@@ -317,3 +319,11 @@ def apply_action(base_node, action, colour):
         return boom_action(colour, base_node, action[1])
     # else invalid action
     return None
+
+
+def state_after_action(state, action, colour):
+    return apply_action(Node(state), action, colour).state
+
+
+def is_game_over(state):
+    return bool(state.total_black() == 0 or state.total_white() == 0)
