@@ -79,7 +79,6 @@ class State:
         return State(self.white_stacks, self.black_stacks)
 
 
-
 class Node:
     """Node class for storing states and their values"""
 
@@ -276,7 +275,7 @@ def heuristic(colour, state):
             return LOST_GAME
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
         # distance, **higer** is better
-        return state.total_black() - state.total_white()  #- manhattan_dist(state)
+        return state.total_black() - state.total_white()  # - manhattan_dist(state)
 
     # else, incorrect colour given return None
     return None
