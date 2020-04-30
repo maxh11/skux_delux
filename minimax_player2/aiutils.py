@@ -26,10 +26,6 @@ START_WHITE_STACKS = {
     (0, 1): 1, (1, 1): 1, (3, 1): 1, (4, 1): 1, (6, 1): 1, (7, 1): 1,
     (0, 0): 1, (1, 0): 1, (3, 0): 1, (4, 0): 1, (6, 0): 1, (7, 0): 1}
 
-WEIGHT = {1: 12 / 12, 2: 11 / 12, 3: 10 / 12, 4: 9 / 12, 5: 8 / 12, 6: 7 / 12, 7: 6 / 12, 8: 5 / 12, 9: 4 / 12,
-          10: 3 / 12, 11: 2 / 12, 12: 1 / 12}
-EMPTY_STACK_NUMBERS = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0}
-
 
 class State:
     """State class to be associated with 1  The state is stored in the form of 2 dictionaries, one for white stacks
@@ -78,44 +74,6 @@ class State:
         Since the keys of the stack dictionaries are the (x, y) coordinates where there are at least 1 piece,
         the return type is a list of (x, y) tuples where there are 'colour' pieces"""
         return list(self.get_colour(colour).keys())
-
-    def get_nontrivial_boom_actions(self, colour):
-        # dont return square that has the same resulting state
-        # dont return a boom action that only removes our pieces
-        possible_booms = self.get_squares(colour)
-        actions = []
-        seen_states = []
-        for boom in possible_booms:
-            resulting_state = chain_boom(self.copy(), boom)
-            if resulting_state not in seen_states and (
-                    resulting_state.total_pieces(opponent(colour)) < self.total_pieces(opponent(colour))):
-                actions.append((BOOM, boom))
-        return actions
-
-    def eval(self, colour=WHITE):
-        white_stack_numbers = dict(EMPTY_STACK_NUMBERS)
-        for stack_pieces in self.white_stacks.values():
-            white_stack_numbers[stack_pieces] += 1
-
-        black_stack_numbers = dict(EMPTY_STACK_NUMBERS)
-        for stack_pieces in self.black_stacks.values():
-            black_stack_numbers[stack_pieces] += 1
-
-        """
-        eval = WEIGHT[1] * (white_stack_numbers[1] - black_stack_numbers[1]) \
-               + WEIGHT[2] * (white_stack_numbers[2] - black_stack_numbers[2]) \
-               + WEIGHT[1] * (white_stack_numbers[1] - black_stack_numbers[1])
-               etc...
-        """
-        if colour == WHITE:
-            eval_sign = 1
-        else:
-            eval_sign = -1
-        ev = 0
-        for i in range(1, 13):
-            ev += WEIGHT[i] * ((white_stack_numbers[i] - black_stack_numbers[i]) * eval_sign)
-        # return ev + eval_sign * (self.total_white() - self.total_black())
-        # return ((self.total_white() * len(self.white_stacks)) - self.total_black() * len(self.black_stacks)) * eval_sign
 
     def copy(self):
         return State(self.white_stacks, self.black_stacks)
@@ -177,7 +135,9 @@ class Node:
         actions = []
 
         # go through the list of applicable BOOM actions and add them to actions[]
-        actions = actions + self.state.get_nontrivial_boom_actions(colour)
+        squares = self.state.get_squares(colour)
+        for stack in squares:
+            actions.append((BOOM, stack))
 
         # go through the list of applicable MOVE actions
         # for each item from .items() from a stack dictionary, item[0] is the (x, y) coordinates of of the stack and
@@ -305,8 +265,7 @@ def heuristic(colour, state):
             return LOST_GAME
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
         # distance, **higer** is better
-        return state.eval(colour)
-        #return state.total_white() - state.total_black() # - manhattan_dist(state)
+        return state.total_white() - state.total_black()  # - manhattan_dist(state)
 
     if colour == BLACK:
         if state.total_white() == 0:
@@ -317,8 +276,7 @@ def heuristic(colour, state):
             return LOST_GAME
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
         # distance, **higer** is better
-        return state.eval(colour)
-        #return state.total_black() - state.total_white() # - manhattan_dist(state)
+        return state.total_black() - state.total_white()  # - manhattan_dist(state)
 
     # else, incorrect colour given return None
     return None
@@ -442,7 +400,7 @@ def minimax(node, depth, maximising_player, colour):
 
 
 def get_alphabeta_action(colour, node, budget):
-    current_node = node.copy()
+    current_node = node  # .copy()
     first_moves = current_node.get_children(colour)
 
     moves = {}
@@ -459,26 +417,27 @@ def get_alphabeta_action(colour, node, budget):
 def minimax(node, depth, alpha, beta, maximising_player):
     if depth == 0:
         return heuristic(node.last_colour, node.state)
-    current_node = node  #.copy()
+    current_node = node.copy()
 
     if maximising_player:
         max_eval = -INFINITY
         children = current_node.get_children(opponent(current_node.last_colour))
-        # children.sort(key=lambda x: heuristic(opponent(current_node.last_colour), current_node.state), reverse=True)
+        # children.sort(key=lambda x: heuristic(x.last_colour, x.state), reverse=True)
         for i in range(len(children)):
             ev = minimax(children[i], depth - 1, alpha, beta, False)
             max_eval = max(max_eval, ev)
-            alpha = max(alpha, max_eval)
+            alpha = max(alpha, ev)
             if beta <= alpha:
-                return beta
-        return alpha
+                break
+        return max_eval
     else:
         min_eval = INFINITY
         children = current_node.get_children(opponent(current_node.last_colour))
+        # children.sort(key=lambda x: heuristic(opponent(x.last_colour), x.state))
         for i in range(len(children)):
             ev = minimax(children[i], depth - 1, alpha, beta, True)
             min_eval = min(min_eval, ev)
-            beta = min(beta, min_eval)
+            beta = min(beta, ev)
             if beta <= alpha:
-                return alpha
-        return beta
+                break
+        return min_eval
