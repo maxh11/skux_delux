@@ -150,6 +150,56 @@ class State:
         # return ev + eval_sign * (self.total_white() - self.total_black())
         # return ((self.total_white() * len(self.white_stacks)) - self.total_black() * len(self.black_stacks)) * eval_sign
 
+    def evaluation(self, colour=WHITE):
+        eval = 0
+        eval += piece_val(colour) - piece_val(opponent(colour))
+        if colour == WHITE:
+            # if it is white's turn, being close to black pieces is advantageous
+            if self.depth % 2 == 0:
+                eval += kill_danger(colour)
+            else
+                eval -= kill_danger(colour)
+        if colour == BLACK:
+            # if we are black and it is white's turn, being close to white pieces is detrimental.
+            if self.depth % 2 == 0:
+                eval -= kill_danger(colour)
+            else
+                eval += kill_danger(colour)
+
+
+    def piece_val(self, colour=WHITE):
+        val = 0
+        if colour == WHITE:
+            for stack in state.white_stacks.items():
+                if stack[1] == 2:
+                    val += 4
+                else:
+                    val += stack[1]
+
+        if colour == BLACK:
+            for stack in state.black_stacks.items():
+                if stack[1] == 2:
+                    val += 4
+                else:
+                    val += stack[1]
+
+        return val
+
+    def kill_danger(self, colour=WHITE):
+        eval = 0
+        if colour == WHITE:
+            for stack in state.white_stacks.items():
+                if in_danger(stack, self, colour):
+                    eval += stack[1]
+
+        if colour == BLACK:
+            for stack in state.black_stacks.items():
+                if in_danger(stack, self, colour):
+                    eval += stack[1]
+
+        return eval
+
+
     def num_groups(self, colour):
         """A group is defined as a set of pieces over one or more squares which would all be removed in
         a boom action from a boom in any of the pieces in that group.
@@ -267,7 +317,7 @@ def opponent(colour):
     return None
 
 
-def manhattan_dist(state, colour ):
+def manhattan_dist(state, colour):
     total = 0
 
     if colour == WHITE:
@@ -381,6 +431,18 @@ def heuristic(colour, state):
 def is_game_over(state):
     return bool(state.total_black() == 0 or state.total_white() == 0)
 
+def in_danger(stack, state, colour):
+
+    radius_x = [stack[0], stack[0], stack[0] - 1, stack[0] - 1, stack[0] - 1, stack[0] + 1, stack[0] + 1, stack[0] + 1]
+    radius_y = [stack[1] - 1, stack[1] + 1, stack[1], stack[1] - 1, stack[1] + 1, stack[1], stack[1] - 1, stack[1] + 1]
+
+    radius = list(zip(radius_x, radius_y))
+
+    for opp in state.get_colour(opponent(colour)).items():
+        if opp in radius:
+            return true
+
+    return false
 
 def chain_boom(state, stack_to_boom, stacks_to_remove=None):
     # add the stack_to_boom to the stacks_to_remove
