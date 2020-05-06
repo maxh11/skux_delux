@@ -39,7 +39,11 @@ class MinimaxPlayer:
         # this player of ours will just pick a random one
         # normally 18 with depth of 2
         if self.current_node.state.total_pieces() > 18:
+            #return get_alphabeta_action(self.colour, self.current_node, budget/2)
             return get_greedy_action(self.colour, self.current_node, budget)
+
+        """if self.current_node.state.total_pieces() < 10:
+            return get_alphabeta_action(self.colour, self.current_node, budget*2)"""
         return get_alphabeta_action(self.colour, self.current_node, budget)
 
     def update(self, colour, action):

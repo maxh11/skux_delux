@@ -2,6 +2,8 @@ import math
 import random
 import sys
 
+import referee.game
+
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 UP = (0, 1)
@@ -38,7 +40,7 @@ class State:
     piece. The values associated with each x, y coordinate key is the integer number of pieces in that square.
     """
 
-    def __init__(self, white_stacks=None, black_stacks=None):
+    def __init__(self, white_stacks=None, black_stacks=None, turn=0):
         # e.g. white_stacks = {(3,2): 1, (3,4): 3}
         if white_stacks is None:
             self.white_stacks = dict(START_WHITE_STACKS)
@@ -48,6 +50,7 @@ class State:
             self.black_stacks = dict(START_BLACK_STACKS)
         else:
             self.black_stacks = dict(black_stacks)
+        self.turn = 0
 
     def __eq__(self, other):
         return bool((self.white_stacks == other.white_stacks) and (self.black_stacks == other.black_stacks))
@@ -152,32 +155,59 @@ class State:
 
     def evaluation(self, colour=WHITE):
         eval = 0
-        eval += piece_val(colour) - piece_val(opponent(colour))
+
+        if (self.total_black() == 0) and (self.total_white() == 0):
+            return DRAW_GAME
+
         if colour == WHITE:
+            if self.total_black() == 0:
+                # win game
+                return WIN_GAME
+            if self.total_white() == 0:
+                # lost game
+                return LOST_GAME
             # if it is white's turn, being close to black pieces is advantageous
-            if self.depth % 2 == 0:
-                eval += kill_danger(colour)
-            else
-                eval -= kill_danger(colour)
+            if self.turn % 2 == 0:
+                eval += self.kill_danger(colour)
+            else:
+                eval -= self.kill_danger(colour)
         if colour == BLACK:
+            if self.total_white() == 0:
+                # win game
+                return WIN_GAME
+            if self.total_black() == 0:
+                # lost game
+                return LOST_GAME
             # if we are black and it is white's turn, being close to white pieces is detrimental.
-            if self.depth % 2 == 0:
-                eval -= kill_danger(colour)
-            else
-                eval += kill_danger(colour)
+            if self.turn % 2 == 0:
+                eval -= self.kill_danger(colour)
+            else:
+                eval += self.kill_danger(colour)
+
+        # it is our turn, so it is advantageous to be close to black pieces
+        """if curr_player == colour:
+            eval += self.kill_danger(colour)
+        else:
+            eval -= self.kill_danger(colour)"""
+
+        eval += self.piece_val(colour) - self.piece_val(opponent(colour))
+
+        eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
+
+        return eval
 
 
     def piece_val(self, colour=WHITE):
         val = 0
         if colour == WHITE:
-            for stack in state.white_stacks.items():
+            for stack in self.white_stacks.items():
                 if stack[1] == 2:
                     val += 4
                 else:
                     val += stack[1]
 
         if colour == BLACK:
-            for stack in state.black_stacks.items():
+            for stack in self.black_stacks.items():
                 if stack[1] == 2:
                     val += 4
                 else:
@@ -188,12 +218,12 @@ class State:
     def kill_danger(self, colour=WHITE):
         eval = 0
         if colour == WHITE:
-            for stack in state.white_stacks.items():
+            for stack in self.white_stacks.keys():
                 if in_danger(stack, self, colour):
                     eval += stack[1]
 
         if colour == BLACK:
-            for stack in state.black_stacks.items():
+            for stack in self.black_stacks.keys():
                 if in_danger(stack, self, colour):
                     eval += stack[1]
 
@@ -208,7 +238,7 @@ class State:
         return len(self.get_nontrivial_boom_actions(colour))
 
     def copy(self):
-        return State(self.white_stacks, self.black_stacks)
+        return State(self.white_stacks, self.black_stacks, self.turn)
 
 
 class Node:
@@ -219,7 +249,7 @@ class Node:
             self.state = State()
             self.last_colour = BLACK
         else:
-            self.state = State(state.white_stacks, state.black_stacks)
+            self.state = State(state.white_stacks, state.black_stacks, state.turn)
         self.value = value
         self.parent = parent
         self.move = move
@@ -349,6 +379,7 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
     new_node.parent = base_node
     # new_node depth is parent depth + 1
     new_node.depth = base_node.depth + 1
+    new_node.state.turn = base_node.state.turn + 1
     # store the move which got us to new_node
     new_node.move = (MOVE, n_pieces, stack, dest_square)
     new_node.last_colour = colour
@@ -367,7 +398,8 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
         new_node.state.get_colour(colour)[dest_square] = n_pieces
 
     # update node value
-    new_node.value = heuristic(colour, new_node.state)
+    #new_node.value = heuristic(colour, new_node.state)
+    new_node.value = new_node.state.evaluation(colour)
 
     return new_node
 
@@ -389,7 +421,8 @@ def boom_action(colour, base_node, stack_to_boom):
     new_node.state = chain_boom(new_node.state, stack_to_boom)
 
     # update value and return
-    new_node.value = heuristic(colour, new_node.state)
+    #new_node.value = heuristic(colour, new_node.state)
+    new_node.value = new_node.state.evaluation(colour)
 
     return new_node
 
@@ -440,9 +473,9 @@ def in_danger(stack, state, colour):
 
     for opp in state.get_colour(opponent(colour)).items():
         if opp in radius:
-            return true
+            return True
 
-    return false
+    return False
 
 def chain_boom(state, stack_to_boom, stacks_to_remove=None):
     # add the stack_to_boom to the stacks_to_remove
@@ -578,7 +611,7 @@ def minimax(node, depth, alpha, beta, maximising_player):
     if maximising_player:
         max_eval = -INFINITY
         children = current_node.get_children(opponent(current_node.last_colour))
-        #children.sort(key=lambda x: heuristic(x.last_colour, x.state), reverse=True)
+        children.sort(key=lambda x: heuristic(x.last_colour, x.state), reverse=True)
         for i in range(len(children)):
             ev = minimax(children[i], depth - 1, alpha, beta, False)
             max_eval = max(max_eval, ev)
@@ -589,7 +622,7 @@ def minimax(node, depth, alpha, beta, maximising_player):
     else:
         min_eval = INFINITY
         children = current_node.get_children(opponent(current_node.last_colour))
-        #children.sort(key=lambda x: heuristic(x.last_colour, x.state), reverse=False)
+        children.sort(key=lambda x: heuristic(x.last_colour, x.state), reverse=False)
         for i in range(len(children)):
             ev = minimax(children[i], depth - 1, alpha, beta, True)
             min_eval = min(min_eval, ev)
