@@ -131,7 +131,7 @@ class State:
         #actions.sort(key=lambda x: x[0], reverse=True)
         return [x[1] for x in actions][0:math.ceil(len(actions) / 10)]
 
-    def eval(self, colour=WHITE):
+    """def eval(self, colour=WHITE):
         return 0
         white_stack_numbers = dict(EMPTY_STACK_NUMBERS)
         for stack_pieces in self.white_stacks.values():
@@ -141,12 +141,12 @@ class State:
         for stack_pieces in self.black_stacks.values():
             black_stack_numbers[stack_pieces] += 1
 
-        """
+      
         eval = WEIGHT[1] * (white_stack_numbers[1] - black_stack_numbers[1]) \
                + WEIGHT[2] * (white_stack_numbers[2] - black_stack_numbers[2]) \
                + WEIGHT[1] * (white_stack_numbers[1] - black_stack_numbers[1])
                etc...
-        """
+    
         if colour == WHITE:
             eval_sign = 1
         else:
@@ -155,7 +155,7 @@ class State:
         for i in range(1, 13):
             ev += WEIGHT[i] * ((white_stack_numbers[i] - black_stack_numbers[i]) * eval_sign)
         # return ev + eval_sign * (self.total_white() - self.total_black())
-        # return ((self.total_white() * len(self.white_stacks)) - self.total_black() * len(self.black_stacks)) * eval_sign
+        # return ((self.total_white() * len(self.white_stacks)) - self.total_black() * len(self.black_stacks)) * eval_sign"""
 
     def evaluation(self, colour=WHITE):
         eval = 0
@@ -170,12 +170,12 @@ class State:
             if self.total_white() == 0:
                 # lost game
                 return LOST_GAME
-            eval += (self.total_white() - self.total_black())
+            eval += 5*(self.total_white() - self.total_black())
             # if it is white's turn, being close to black pieces is advantageous
             if self.turn % 2 == 0:
-                eval += abs(math.tanh(self.kill_danger(colour, OUR_TURN)))
+                eval += 0.1*self.kill_danger(colour, OUR_TURN)
             else:
-                eval -= abs(math.tanh(self.kill_danger(colour, THEIR_TURN)))
+                eval -= 0.1*self.kill_danger(colour, THEIR_TURN)
         if colour == BLACK:
             if self.total_white() == 0:
                 # win game
@@ -183,18 +183,18 @@ class State:
             if self.total_black() == 0:
                 # lost game
                 return LOST_GAME
-            eval += (self.total_black() - self.total_white())
+            eval += 5*(self.total_black() - self.total_white())
             # if we are black and it is white's turn, being close to white pieces is detrimental.
             if self.turn % 2 == 0:
-                eval -= abs(math.tanh(self.kill_danger(colour, THEIR_TURN)))
+                eval -= 0.1*self.kill_danger(colour, THEIR_TURN)
             else:
-                eval += abs(math.tanh(self.kill_danger(colour, OUR_TURN)))
+                eval += 0.1*self.kill_danger(colour, OUR_TURN)
 
         #eval += self.piece_val(colour) - self.piece_val(opponent(colour))
         #eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
         #eval += normalise(NUM_GROUPS, self.num_groups(colour)) - normalise(MANHATTAN, manhattan_dist(self, colour))
         #eval -= abs(math.tanh(manhattan_dist(self, colour)))
-        eval -= normalise(MANHATTAN, manhattan_dist(self, colour))
+        eval -= manhattan_dist(self, colour) * 0.1
 
         return eval
 
