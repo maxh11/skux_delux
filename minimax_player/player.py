@@ -58,5 +58,4 @@ class MinimaxPlayer:
         """
         # TODO: Update state representation in response to action.
         self.current_node = self.current_node.apply_action(colour, action)
-        print(len(self.current_node.state.black_stacks))
         #print({WHITE: heuristic(WHITE, self.current_node.state), BLACK: heuristic(BLACK, self.current_node.state)})

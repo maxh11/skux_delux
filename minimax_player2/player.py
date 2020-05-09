@@ -42,8 +42,6 @@ class MinimaxPlayer:
             #return get_alphabeta_action(self.colour, self.current_node, budget/2)
             return get_greedy_action(self.colour, self.current_node, budget)
 
-        """if self.current_node.state.total_pieces() < 10:
-            return get_alphabeta_action(self.colour, self.current_node, budget*2)"""
         return get_alphabeta_action(self.colour, self.current_node, budget)
 
     def update(self, colour, action):
