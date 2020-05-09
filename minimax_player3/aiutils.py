@@ -38,14 +38,6 @@ WEIGHT = {1: 12 / 12, 2: 11 / 12, 3: 10 / 12, 4: 9 / 12, 5: 8 / 12, 6: 7 / 12, 7
           10: 3 / 12, 11: 2 / 12, 12: 1 / 12}
 EMPTY_STACK_NUMBERS = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0}
 
-num_pieces_evs = []
-w1 = 5
-kill_danger_evs = []
-w2 = 0.1
-manhattan_dist_evs = []
-w3 = 0.1
-num_groups_evs = []
-w4 = 0.1
 
 class State:
     """State class to be associated with 1  The state is stored in the form of 2 dictionaries, one for white stacks
@@ -63,7 +55,7 @@ class State:
             self.black_stacks = dict(START_BLACK_STACKS)
         else:
             self.black_stacks = dict(black_stacks)
-        self.turn = turn
+        self.turn = 0
 
     def __eq__(self, other):
         return bool((self.white_stacks == other.white_stacks) and (self.black_stacks == other.black_stacks))
@@ -137,7 +129,7 @@ class State:
                             act = (MOVE, n_pieces, stack[0], final_square)
                             actions.append((Node(self).apply_action(colour, act).state.num_groups(colour), act))
         random.shuffle(actions)
-        #actions.sort(key=lambda x: x[0], reverse=True)
+        # actions.sort(key=lambda x: x[0], reverse=True)
         return [x[1] for x in actions][0:math.ceil(len(actions) / 10)]
 
     """def eval(self, colour=WHITE):
@@ -150,12 +142,12 @@ class State:
         for stack_pieces in self.black_stacks.values():
             black_stack_numbers[stack_pieces] += 1
 
-      
+
         eval = WEIGHT[1] * (white_stack_numbers[1] - black_stack_numbers[1]) \
                + WEIGHT[2] * (white_stack_numbers[2] - black_stack_numbers[2]) \
                + WEIGHT[1] * (white_stack_numbers[1] - black_stack_numbers[1])
                etc...
-    
+
         if colour == WHITE:
             eval_sign = 1
         else:
@@ -179,12 +171,12 @@ class State:
             if self.total_white() == 0:
                 # lost game
                 return LOST_GAME
-            eval += w1*(self.total_white() - self.total_black())
+            eval += 5 * (self.total_white() - self.total_black())
             # if it is white's turn, being close to black pieces is advantageous
             if self.turn % 2 == 0:
-                eval += w2*self.kill_danger(colour, OUR_TURN)
+                eval += 0.1 * self.kill_danger(colour, OUR_TURN)
             else:
-                eval -= w2*self.kill_danger(colour, THEIR_TURN)
+                eval -= 0.1 * self.kill_danger(colour, THEIR_TURN)
         if colour == BLACK:
             if self.total_white() == 0:
                 # win game
@@ -192,22 +184,21 @@ class State:
             if self.total_black() == 0:
                 # lost game
                 return LOST_GAME
-            eval += w1*(self.total_black() - self.total_white())
+            eval += 5 * (self.total_black() - self.total_white())
             # if we are black and it is white's turn, being close to white pieces is detrimental.
             if self.turn % 2 == 0:
-                eval -= w2*self.kill_danger(colour, THEIR_TURN)
+                eval -= 0.1 * self.kill_danger(colour, THEIR_TURN)
             else:
-                eval += w2*self.kill_danger(colour, OUR_TURN)
+                eval += 0.1 * self.kill_danger(colour, OUR_TURN)
 
-        #eval += self.piece_val(colour) - self.piece_val(opponent(colour))
-        #eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
-        #eval += normalise(NUM_GROUPS, self.num_groups(colour)) - normalise(MANHATTAN, manhattan_dist(self, colour))
-        #eval -= abs(math.tanh(manhattan_dist(self, colour)))
-        eval -= manhattan_dist(self, colour) * w3
-        eval += self.num_groups(colour) * w4
+        # eval += self.piece_val(colour) - self.piece_val(opponent(colour))
+        # eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
+        # eval += normalise(NUM_GROUPS, self.num_groups(colour)) - normalise(MANHATTAN, manhattan_dist(self, colour))
+        # eval -= abs(math.tanh(manhattan_dist(self, colour)))
+        eval -= manhattan_dist(self, colour) * 0.1
+        eval += self.num_groups(colour) * 0.1
 
         return eval
-
 
     """def piece_val(self, colour=WHITE):
         val = 0
@@ -243,7 +234,6 @@ class State:
                     eval += self.get_colour(colour).get(st)
 
         return eval
-
 
     def num_groups(self, colour):
         """A group is defined as a set of pieces over one or more squares which would all be removed in
@@ -368,11 +358,13 @@ class Node:
             children.append(self.apply_action(colour, action))
         return children
 
+
 def normalise(type, value):
     if type == "md":
         return (value - 0.5) / (7.5 - 0.5)
     if type == "ng":
         return (value - 1) / (4 - 1)
+
 
 def is_legal_move(enemy_stack_locations, moving_stack_location, move_direction, n_steps):
     """ check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of bounds and not
@@ -395,8 +387,8 @@ def opponent(colour):
         return WHITE
     return None
 
-def in_danger(stack, state, colour, stacks_indanger=None):
 
+def in_danger(stack, state, colour, stacks_indanger=None):
     if stacks_indanger is None:
         stacks_indanger = set()
 
@@ -414,6 +406,7 @@ def in_danger(stack, state, colour, stacks_indanger=None):
 
     return stacks_indanger
 
+
 def manhattan_dist(state, colour):
     total = 0
 
@@ -426,7 +419,7 @@ def manhattan_dist(state, colour):
                 total += current_total / 5
             else:
                 total += current_total / len(state.black_stacks)
-        #if len(state.black_stacks) == 0: return total
+        # if len(state.black_stacks) == 0: return total
         if len(state.white_stacks) < 3:
             return total / 5
         return total / len(state.white_stacks)
@@ -440,7 +433,7 @@ def manhattan_dist(state, colour):
                 total += current_total / 5
             else:
                 total += current_total / len(state.white_stacks)
-        #if len(state.black_stacks) == 0: return total
+        # if len(state.black_stacks) == 0: return total
         if len(state.black_stacks) < 3:
             return total / 5
         return total / len(state.black_stacks)
@@ -475,7 +468,7 @@ def move_action(colour, base_node, n_pieces, stack, dest_square):
         new_node.state.get_colour(colour)[dest_square] = n_pieces
 
     # update node value
-    #new_node.value = heuristic(colour, new_node.state)
+    # new_node.value = heuristic(colour, new_node.state)
     new_node.value = new_node.state.evaluation(colour)
 
     return new_node
@@ -490,7 +483,6 @@ def boom_action(colour, base_node, stack_to_boom):
     new_node.parent = base_node
     # new_node depth is parent depth + 1
     new_node.depth = base_node.depth + 1
-    new_node.state.turn = base_node.state.turn + 1
     # store the move which got us to new_node
     new_node.move = (BOOM, stack_to_boom)
     new_node.last_colour = colour
@@ -499,7 +491,7 @@ def boom_action(colour, base_node, stack_to_boom):
     new_node.state = chain_boom(new_node.state, stack_to_boom)
 
     # update value and return
-    #new_node.value = heuristic(colour, new_node.state)
+    # new_node.value = heuristic(colour, new_node.state)
     new_node.value = new_node.state.evaluation(colour)
 
     return new_node
@@ -520,7 +512,8 @@ def heuristic(colour, state):
         # distance, **higer** is better
         # return state.eval(colour)
         return state.total_white() - state.total_black() - abs(math.tanh(manhattan_dist(
-            state,colour)))  # + math.tanh(state.num_groups(WHITE)) #- abs( math.tanh(manhattan_dist(state)) ) # - manhattan_dist(state)
+            state,
+            colour)))  # + math.tanh(state.num_groups(WHITE)) #- abs( math.tanh(manhattan_dist(state)) ) # - manhattan_dist(state)
 
     if colour == BLACK:
         if state.total_white() == 0:
@@ -533,7 +526,8 @@ def heuristic(colour, state):
         # distance, **higer** is better
         # return state.eval(colour)
         return state.total_black() - state.total_white() - abs(math.tanh(
-            manhattan_dist(state, colour)))  # + math.tanh(state.num_groups(BLACK)) #- abs( math.tanh(manhattan_dist(state)) )
+            manhattan_dist(state,
+                           colour)))  # + math.tanh(state.num_groups(BLACK)) #- abs( math.tanh(manhattan_dist(state)) )
 
     # else, incorrect colour given return None
     return None
@@ -541,7 +535,6 @@ def heuristic(colour, state):
 
 def is_game_over(state):
     return bool(state.total_black() == 0 or state.total_white() == 0)
-
 
 
 def chain_boom(state, stack_to_boom, stacks_to_remove=None):
@@ -653,6 +646,7 @@ def minimax(node, depth, maximising_player, colour):
                 best_value[opponent(colour)] = tmp[opponent(colour)]
         return best_value
 """
+
 """def get_alphabeta_action(colour, node, budget):
     current_node = node.copy()
     first_moves = current_node.get_children(colour)
@@ -668,6 +662,7 @@ def minimax(node, depth, maximising_player, colour):
 
     return best_move"""
 
+
 def get_alphabeta_action(colour, node, budget):
     current_node = node.copy()
     first_moves = current_node.get_children(colour)
@@ -680,9 +675,7 @@ def get_alphabeta_action(colour, node, budget):
             moves[value].append(child.move)
         else:
             moves[value] = [child.move]
-
-    best_move = random.choice(moves[max(moves)])
-    return best_move
+    return random.choice(moves[max(moves)])
 
 
 def minimax(node, depth, alpha, beta, maximising_player):
@@ -712,3 +705,47 @@ def minimax(node, depth, alpha, beta, maximising_player):
             if beta <= alpha:
                 return alpha
         return beta
+
+def max_value(node, alpha, beta, depth):
+    if depth == 0:
+        return node.value
+    current_node = node.copy()
+    v = -INFINITY
+    children = current_node.get_children(opponent(current_node.last_colour))
+    children.sort(key=lambda x: x.value, reverse=True)
+    for i in range(len(children)):
+        v = max(v, min_value(children[i], alpha, beta, depth - 1))
+        if v >= beta:
+            return v
+        alpha = max(alpha, v)
+    return v
+
+def min_value(node, alpha, beta, depth):
+    if depth == 0:
+        return node.value
+    current_node = node.copy()
+    v = INFINITY
+    children = current_node.get_children(opponent(current_node.last_colour))
+    children.sort(key=lambda x: x.value, reverse=False)
+    for i in range(len(children)):
+        v = min(v, max_value(children[i], alpha, beta, depth - 1))
+        if v <= alpha:
+            return v
+        beta = min(beta, v)
+    return v
+
+def alpha_beta_revised(node, budget, colour):
+    current_node = node.copy()
+    best_score = -INFINITY
+    beta = INFINITY
+    best_action = None
+
+    first_moves = current_node.get_children(colour)
+
+    for i in range(len(first_moves)):
+        v = min_value(first_moves[i], best_score, beta, budget)
+        if v > best_score:
+            best_score = v
+            best_action = first_moves[i]
+
+    return best_action

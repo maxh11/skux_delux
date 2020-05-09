@@ -43,6 +43,8 @@ class MinimaxPlayer:
             return get_greedy_action(self.colour, self.current_node, budget)
 
         return get_alphabeta_action(self.colour, self.current_node, budget)
+        #return alpha_beta_revised(self.current_node, budget, self.colour)
+
 
     def update(self, colour, action):
         """
@@ -61,44 +63,4 @@ class MinimaxPlayer:
         """
         # TODO: Update state representation in response to action.
         self.current_node = self.current_node.apply_action(colour, action)
-        num_pieces_evs.append(self.current_node.state.total_white() - self.current_node.state.total_black())
-        kill_danger_evs.append(self.current_node.state.kill_danger(colour, OUR_TURN))
-        manhattan_dist_evs.append(manhattan_dist(self.current_node.state, colour))
-        num_groups_evs.append(self.current_node.state.num_groups(colour))
-        # Game over, start td leaf lambda learning being white player always
-        if is_game_over(self.current_node.state):
-
-            if self.current_node.state.total_black() == 0:
-                # game won, sn = 1
-                sn = 1
-            elif self.current_node.state.total_white() == 0:
-                # game lost, sn = -1
-                sn = -1
-            else:
-                # game drew, sn = 0
-                sn = 0
-
-            print(sn)
-            sum1 = 0
-            sum2 = 0
-            sum3 = 0
-            sum4 = 0
-
-            for i in range(len(num_pieces_evs)):
-                sum1 += num_pieces_evs[i] * (math.tanh(num_pieces_evs[i]) - sn)
-            w1new = w1 - 0.01 * sum1
-            print(w1new)
-            for i in range(len(kill_danger_evs)):
-                sum2 += kill_danger_evs[i] * (math.tanh(kill_danger_evs[i]) - sn)
-            w2new = w2 - 0.01 * sum2
-            print(w2new)
-            for i in range(len(manhattan_dist_evs)):
-                sum3 += manhattan_dist_evs[i] * (1 - math.tanh(manhattan_dist_evs[i]) - sn)
-            w3new = w3 - 0.01 * sum3
-            print(w3new)
-            for i in range(len(num_groups_evs)):
-                sum4 += num_groups_evs[i] * (math.tanh(num_groups_evs[i]) - sn)
-            w4new = w4 - 0.01 * sum4
-            print(w4new)
-
         # print({WHITE: heuristic(WHITE, self.current_node.state), BLACK: heuristic(BLACK, self.current_node.state)})
