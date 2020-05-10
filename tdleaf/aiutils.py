@@ -602,6 +602,19 @@ def get_greedy_action(colour, base_node, budget):
 
     # make a copy of the initial node we were given
     # base_node = Node(current_node.state)
+
+    # check if we can make a book move
+    global in_book
+    if in_book and base_node.state.turn in book_moves[colour]:
+        # check if it is a legal move
+        move = book_moves[colour][base_node.state.turn]
+        # check if 1) the squre we are moving from is in our stack dictionay, 2) check if the move is not landing in an enemy stack square
+        if move[2] in base_node.state.get_colour(colour) and move[3] not in base_node.state.get_colour(
+                opponent(colour)):
+            return book_moves[colour][base_node.state.turn]
+        else:
+            in_book = False
+
     best_actions = []  # initialise the best_actions with a dummy value so our loop doesnt kick up a fuss when we try to access the [0] index for the first time
     best_score = LOST_GAME
     actions = base_node.get_possible_actions(colour)
@@ -725,3 +738,22 @@ def minimax(node, depth, alpha, beta, maximising_player):
             if beta <= alpha:
                 return alpha
         return beta
+
+
+white_book = {
+    0: (MOVE, 1, (3, 1), (4, 1)),
+    2: (MOVE, 1, (7, 1), (6, 1)),
+    4: (MOVE, 2, (4, 1), (5, 1)),
+    6: (MOVE, 2, (6, 1), (5, 1)),
+    8: (MOVE, 1, (5, 1), (5, 5))
+}
+
+black_book = {
+    1: (MOVE, 1, (4, 6), (3, 6)),
+    3: (MOVE, 1, (0, 6), (1, 6)),
+    5: (MOVE, 2, (3, 6), (2, 6)),
+    7: (MOVE, 2, (1, 6), (2, 6)),
+    9: (MOVE, 1, (2, 6), (2, 2))
+}
+book_moves = {WHITE: white_book, BLACK: black_book}
+in_book = True

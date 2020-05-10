@@ -338,35 +338,6 @@ class Node:
                                 actions.append((MOVE, n_pieces, stack[0], final_square))
             return actions
 
-    """def get_possible_actions(self, colour):
-        """"""Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
-        [(BOOM, (0, 2)), (BOOM, (0, 1)), (MOVE, 2, (0, 1), (2, 1)), (MOVE, 1, (7, 5), (7, 6)) ... etc]
-        """"""
-        # array of actions which we will return after we have filled it with possible (legal) moves
-        actions = []
-
-        # go through the list of applicable BOOM actions and add them to actions[]
-        squares = self.state.get_squares(colour)
-        for stack in squares:
-            actions.append((BOOM, stack))
-
-        # go through the list of applicable MOVE actions
-        # for each item from .items() from a stack dictionary, item[0] is the (x, y) coordinates of of the stack and
-        # item[1] is the number of pieces in the stack
-        for stack in self.state.get_colour(colour).items():
-            # iterate through each possible number of pieces to move from our stack at the current occupied_square
-            for n_pieces in range(1, stack[1] + 1):
-                # possible moving directions
-                for move_direction in MOVE_DIRECTIONS:
-                    # number of squares to move n_pieces from current stack, 1 <= n_steps <= n_pieces
-                    for n_steps in range(1, stack[1] + 1):
-                        # check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of
-                        # bounds and not landing on an enemy piece)
-                        if is_legal_move(self.state.get_squares(opponent(colour)), stack[0], move_direction, n_steps):
-                            final_square = calculate_dest_square(stack[0], move_direction, n_steps)
-                            actions.append((MOVE, n_pieces, stack[0], final_square))
-        return actions"""
-
     def get_children(self, colour):
         children = []
         actions = self.get_possible_actions(colour)
@@ -596,6 +567,19 @@ def get_greedy_action(colour, base_node, budget):
 
     # make a copy of the initial node we were given
     # base_node = Node(current_node.state)
+
+    # check if we can make a book move
+    global in_book
+    if in_book and base_node.state.turn in book_moves[colour]:
+        # check if it is a legal move
+        move = book_moves[colour][base_node.state.turn]
+        # check if 1) the squre we are moving from is in our stack dictionay, 2) check if the move is not landing in an enemy stack square
+        if move[2] in base_node.state.get_colour(colour) and move[3] not in base_node.state.get_colour(
+                opponent(colour)):
+            return book_moves[colour][base_node.state.turn]
+        else:
+            in_book = False
+
     best_actions = []  # initialise the best_actions with a dummy value so our loop doesnt kick up a fuss when we try to access the [0] index for the first time
     best_score = LOST_GAME
     actions = base_node.get_possible_actions(colour)
@@ -633,46 +617,6 @@ def get_minimax_action(colour, base_node, budget):
 # node = 'current node being worked on'
 # depth = the amount of depth we have left to explore
 # colour = the current players turn
-"""
-def minimax(node, depth, maximising_player, colour):
-    if depth == 0 or is_game_over(node.state):
-        # print({WHITE: heuristic(WHITE, node.state), BLACK: heuristic(BLACK, node.state)})
-        return {WHITE: heuristic(WHITE, node.state), BLACK: heuristic(BLACK, node.state)}
-    if maximising_player:
-        best_value = {colour: LOST_GAME, opponent(colour): WIN_GAME}
-        actions = node.get_possible_actions(colour)
-        for action in actions:
-            current_node = node.apply_action(colour, action)
-            tmp = minimax(current_node, depth - 1, False, opponent(colour))
-            if tmp[colour] > best_value[colour]:
-                best_value[colour] = tmp[colour]
-                best_value[opponent(colour)] = tmp[opponent(colour)]
-        return best_value
-    else:
-        best_value = {colour: WIN_GAME, opponent(colour): LOST_GAME}
-        actions = node.get_possible_actions(colour)
-        for action in actions:
-            current_node = node.apply_action(colour, action)
-            tmp = minimax(current_node, depth - 1, True, opponent(colour))
-            if tmp[colour] < best_value[colour]:
-                best_value[colour] = tmp[colour]
-                best_value[opponent(colour)] = tmp[opponent(colour)]
-        return best_value
-"""
-"""def get_alphabeta_action(colour, node, budget):
-    current_node = node.copy()
-    first_moves = current_node.get_children(colour)
-
-    best_move = None
-    best_value = -INFINITY
-    for i in range(len(first_moves)):
-        child = first_moves[i]
-        value = minimax(child, budget, -INFINITY, INFINITY, False)
-        if (value > best_value):
-            best_move = child.move
-            best_value = value
-
-    return best_move"""
 
 def get_alphabeta_action(colour, node, budget):
     current_node = node.copy()
@@ -718,3 +662,22 @@ def minimax(node, depth, alpha, beta, maximising_player):
             if beta <= alpha:
                 return alpha
         return beta
+
+
+white_book = {
+    0: (MOVE, 1, (3, 1), (4, 1)),
+    2: (MOVE, 1, (7, 1), (6, 1)),
+    4: (MOVE, 2, (4, 1), (5, 1)),
+    6: (MOVE, 2, (6, 1), (5, 1)),
+    8: (MOVE, 1, (5, 1), (5, 5))
+}
+
+black_book = {
+    1: (MOVE, 1, (4, 6), (3, 6)),
+    3: (MOVE, 1, (0, 6), (1, 6)),
+    5: (MOVE, 2, (3, 6), (2, 6)),
+    7: (MOVE, 2, (1, 6), (2, 6)),
+    9: (MOVE, 1, (2, 6), (2, 2))
+}
+book_moves = {WHITE: white_book, BLACK: black_book}
+in_book = True
