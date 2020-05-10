@@ -38,9 +38,11 @@ class MinimaxPlayer:
         # TODO: Decide what action to take, and return it
         # this player of ours will just pick a random one
         # normally 18 with depth of 2
-        if self.current_node.state.total_pieces() > 18:
+        if self.current_node.state.total_pieces() > 20:
             #return get_alphabeta_action(self.colour, self.current_node, budget/2)
             return get_greedy_action(self.colour, self.current_node, budget)
+        if self.current_node.state.total_pieces() < 7:
+            return get_alphabeta_action(self.colour, self.current_node, budget*2)
 
         return get_alphabeta_action(self.colour, self.current_node, budget)
         #return alpha_beta_revised(self.current_node, budget, self.colour)

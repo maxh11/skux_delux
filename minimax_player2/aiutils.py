@@ -21,12 +21,6 @@ BOOM = "BOOM"
 WHITE = "white"
 BLACK = "black"
 
-OUR_TURN = "ours"
-THEIR_TURN = "theirs"
-
-MANHATTAN = "md"
-NUM_GROUPS = "ng"
-
 START_BLACK_STACKS = {
     (0, 7): 1, (1, 7): 1, (3, 7): 1, (4, 7): 1, (6, 7): 1, (7, 7): 1,
     (0, 6): 1, (1, 6): 1, (3, 6): 1, (4, 6): 1, (6, 6): 1, (7, 6): 1}
@@ -179,12 +173,7 @@ class State:
             if self.total_white() == 0:
                 # lost game
                 return LOST_GAME
-            eval += w1*(self.total_white() - self.total_black())
-            # if it is white's turn, being close to black pieces is advantageous
-            if self.turn % 2 == 0:
-                eval += w2*self.kill_danger(colour, OUR_TURN)
-            else:
-                eval -= w2*self.kill_danger(colour, THEIR_TURN)
+
         if colour == BLACK:
             if self.total_white() == 0:
                 # win game
@@ -192,18 +181,15 @@ class State:
             if self.total_black() == 0:
                 # lost game
                 return LOST_GAME
-            eval += w1*(self.total_black() - self.total_white())
-            # if we are black and it is white's turn, being close to white pieces is detrimental.
-            if self.turn % 2 == 0:
-                eval -= w2*self.kill_danger(colour, THEIR_TURN)
-            else:
-                eval += w2*self.kill_danger(colour, OUR_TURN)
 
         #eval += self.piece_val(colour) - self.piece_val(opponent(colour))
         #eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
         #eval += normalise(NUM_GROUPS, self.num_groups(colour)) - normalise(MANHATTAN, manhattan_dist(self, colour))
         #eval -= abs(math.tanh(manhattan_dist(self, colour)))
         eval -= manhattan_dist(self, colour) * w3
+
+        eval += w1*((0.95 ** self.total_pieces()) * (self.total_pieces(colour) - self.total_pieces(opponent(colour))))
+
         eval += self.num_groups(colour) * w4
 
         return eval
@@ -227,7 +213,9 @@ class State:
 
         return val"""
 
-    def kill_danger(self, colour, type):
+
+
+    """def kill_danger(self, colour, type, colour_to_move=None):
         eval = 0
 
         if type == OUR_TURN:
@@ -238,11 +226,32 @@ class State:
 
         if type == THEIR_TURN:
             for stack in self.get_colour(opponent(colour)).keys():
-                stacks_indanger = in_danger(stack, self, opponent(colour))
+                stacks_indanger = list(in_danger(stack, self, opponent(colour)))
                 for st in stacks_indanger:
                     eval += self.get_colour(colour).get(st)
 
         return eval
+
+    def in_danger(stack, state, colour, stacks_indanger=None):
+
+        if stacks_indanger is None:
+            stacks_indanger = set()
+
+        radius_x = [stack[0], stack[0], stack[0] - 1, stack[0] - 1, stack[0] - 1, stack[0] + 1, stack[0] + 1,
+                    stack[0] + 1]
+        radius_y = [stack[1] - 1, stack[1] + 1, stack[1], stack[1] - 1, stack[1] + 1, stack[1], stack[1] - 1,
+                    stack[1] + 1]
+
+        radius = list(zip(radius_x, radius_y))
+        opp_stacks = state.get_colour(opponent(colour)).keys()
+        stacks_proximity = list(set(opp_stacks).intersection(radius))
+
+        for st in stacks_proximity:
+            if st not in stacks_indanger:
+                stacks_indanger.add(st)
+                in_danger(st, state, colour, stacks_indanger)
+
+        return stacks_indanger"""
 
 
     def num_groups(self, colour):
@@ -304,10 +313,10 @@ class Node:
         print("INVALID ACTION GIVEN TO .apply_action() in aiutils.py\n")
         return None
 
-    def get_possible_actions(self, colour):
-        """Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
+    """def get_possible_actions(self, colour):
+       """ """Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
         [(BOOM, (0, 2)), (BOOM, (0, 1)), (MOVE, 2, (0, 1), (2, 1)), (MOVE, 1, (7, 5), (7, 6)) ... etc]
-        """
+        """"""
         # array of actions which we will return after we have filled it with possible (legal) moves
         actions = []
 
@@ -336,12 +345,12 @@ class Node:
                             if is_legal_move(self.state.get_squares(opponent(colour)), stack[0], move_direction, n_steps):
                                 final_square = calculate_dest_square(stack[0], move_direction, n_steps)
                                 actions.append((MOVE, n_pieces, stack[0], final_square))
-            return actions
+            return actions"""
 
-    """def get_possible_actions(self, colour):
-        """"""Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
+    def get_possible_actions(self, colour):
+        """Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
         [(BOOM, (0, 2)), (BOOM, (0, 1)), (MOVE, 2, (0, 1), (2, 1)), (MOVE, 1, (7, 5), (7, 6)) ... etc]
-        """"""
+        """
         # array of actions which we will return after we have filled it with possible (legal) moves
         actions = []
 
@@ -365,7 +374,7 @@ class Node:
                         if is_legal_move(self.state.get_squares(opponent(colour)), stack[0], move_direction, n_steps):
                             final_square = calculate_dest_square(stack[0], move_direction, n_steps)
                             actions.append((MOVE, n_pieces, stack[0], final_square))
-        return actions"""
+        return actions
 
     def get_children(self, colour):
         children = []
@@ -596,6 +605,18 @@ def get_greedy_action(colour, base_node, budget):
 
     # make a copy of the initial node we were given
     # base_node = Node(current_node.state)
+
+    global in_book
+    if in_book and base_node.state.turn in book_moves[colour]:
+        # check if it is a legal move
+        move = book_moves[colour][base_node.state.turn]
+        # check if 1) the squre we are moving from is in our stack dictionay, 2) check if the move is not landing in an enemy stack square
+        if move[2] in base_node.state.get_colour(colour) and move[3] not in base_node.state.get_colour(
+                opponent(colour)):
+            return book_moves[colour][base_node.state.turn]
+        else:
+            in_book = False
+
     best_actions = []  # initialise the best_actions with a dummy value so our loop doesnt kick up a fuss when we try to access the [0] index for the first time
     best_score = LOST_GAME
     actions = base_node.get_possible_actions(colour)
@@ -718,3 +739,19 @@ def minimax(node, depth, alpha, beta, maximising_player):
             if beta <= alpha:
                 return alpha
         return beta
+
+white_book = {
+    0: (MOVE, 1, (4, 1), (3, 1)),
+    2: (MOVE, 2, (3, 1), (3, 3)),
+    4: (MOVE, 1, (3, 3), (3, 5)),
+    #6: (MOVE, 1, (3, 1), (3, 5))
+}
+
+black_book = {
+    1: (MOVE, 1, (3, 6), (4, 6)),
+    3: (MOVE, 2, (4, 6), (4, 4)),
+    5: (MOVE, 1, (4, 4), (4, 2)),
+    #7: (MOVE, 1, (4, 6), (4, 2))
+}
+book_moves = {WHITE: white_book, BLACK: black_book}
+in_book = True

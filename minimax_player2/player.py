@@ -38,9 +38,11 @@ class MinimaxPlayer:
         # TODO: Decide what action to take, and return it
         # this player of ours will just pick a random one
         # normally 18 with depth of 2
-        if self.current_node.state.total_pieces() > 18:
-            #return get_alphabeta_action(self.colour, self.current_node, budget/2)
+        if self.current_node.state.total_pieces() > 20:
+            # return get_alphabeta_action(self.colour, self.current_node, budget/2)
             return get_greedy_action(self.colour, self.current_node, budget)
+        if self.current_node.state.total_pieces() < 7:
+            return get_alphabeta_action(self.colour, self.current_node, budget * 2)
 
         return get_alphabeta_action(self.colour, self.current_node, budget)
 
@@ -61,7 +63,7 @@ class MinimaxPlayer:
         """
         # TODO: Update state representation in response to action.
         self.current_node = self.current_node.apply_action(colour, action)
-        num_pieces_evs.append(self.current_node.state.total_white() - self.current_node.state.total_black())
+        """num_pieces_evs.append(self.current_node.state.total_white() - self.current_node.state.total_black())
         kill_danger_evs.append(self.current_node.state.kill_danger(colour, OUR_TURN))
         manhattan_dist_evs.append(manhattan_dist(self.current_node.state, colour))
         num_groups_evs.append(self.current_node.state.num_groups(colour))
@@ -99,6 +101,6 @@ class MinimaxPlayer:
             for i in range(len(num_groups_evs)):
                 sum4 += num_groups_evs[i] * (math.tanh(num_groups_evs[i]) - sn)
             w4new = w4 - 0.01 * sum4
-            print(w4new)
+            print(w4new)"""
 
         # print({WHITE: heuristic(WHITE, self.current_node.state), BLACK: heuristic(BLACK, self.current_node.state)})

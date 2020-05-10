@@ -21,12 +21,6 @@ BOOM = "BOOM"
 WHITE = "white"
 BLACK = "black"
 
-OUR_TURN = "ours"
-THEIR_TURN = "theirs"
-
-MANHATTAN = "md"
-NUM_GROUPS = "ng"
-
 START_BLACK_STACKS = {
     (0, 7): 1, (1, 7): 1, (3, 7): 1, (4, 7): 1, (6, 7): 1, (7, 7): 1,
     (0, 6): 1, (1, 6): 1, (3, 6): 1, (4, 6): 1, (6, 6): 1, (7, 6): 1}
@@ -44,12 +38,12 @@ parser = ConfigParser()
 parser.read('./tdleaf0/weights.ini')
 
 w1 = parser.getfloat('weights', 'w1')
-kill_danger_evs = []
-w2 = parser.getfloat('weights', 'w2')
 manhattan_dist_evs = []
-w3 = parser.getfloat('weights', 'w3')
+w2 = parser.getfloat('weights', 'w2')
 num_groups_evs = []
-w4 = parser.getfloat('weights', 'w4')
+w3 = parser.getfloat('weights', 'w3')
+
+
 
 
 class State:
@@ -150,17 +144,13 @@ class State:
         white_stack_numbers = dict(EMPTY_STACK_NUMBERS)
         for stack_pieces in self.white_stacks.values():
             white_stack_numbers[stack_pieces] += 1
-
         black_stack_numbers = dict(EMPTY_STACK_NUMBERS)
         for stack_pieces in self.black_stacks.values():
             black_stack_numbers[stack_pieces] += 1
-
-
         eval = WEIGHT[1] * (white_stack_numbers[1] - black_stack_numbers[1]) \
                + WEIGHT[2] * (white_stack_numbers[2] - black_stack_numbers[2]) \
                + WEIGHT[1] * (white_stack_numbers[1] - black_stack_numbers[1])
                etc...
-
         if colour == WHITE:
             eval_sign = 1
         else:
@@ -185,11 +175,6 @@ class State:
                 # lost game
                 return LOST_GAME
             eval += w1 * (self.total_white() - self.total_black())
-            # if it is white's turn, being close to black pieces is advantageous
-            if self.turn % 2 == 0:
-                eval += w2 * self.kill_danger(colour, OUR_TURN)
-            else:
-                eval -= w2 * self.kill_danger(colour, THEIR_TURN)
         if colour == BLACK:
             if self.total_white() == 0:
                 # win game
@@ -198,55 +183,22 @@ class State:
                 # lost game
                 return LOST_GAME
             eval += w1 * (self.total_black() - self.total_white())
-            # if we are black and it is white's turn, being close to white pieces is detrimental.
-            if self.turn % 2 == 0:
-                eval -= w2 * self.kill_danger(colour, THEIR_TURN)
-            else:
-                eval += w2 * self.kill_danger(colour, OUR_TURN)
 
         # eval += self.piece_val(colour) - self.piece_val(opponent(colour))
         # eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
         # eval += normalise(NUM_GROUPS, self.num_groups(colour)) - normalise(MANHATTAN, manhattan_dist(self, colour))
         # eval -= abs(math.tanh(manhattan_dist(self, colour)))
-        eval += manhattan_dist(self, colour) * w3
-        eval += self.num_groups(colour) * w4
+
+        eval += w1 * self.weighted_piece_val(colour)
+
+        eval += manhattan_dist(self, colour) * w2
+
+        eval += self.num_groups(colour) * w3
 
         return eval
 
-    """def piece_val(self, colour=WHITE):
-        val = 0
-        if colour == WHITE:
-            for stack in self.white_stacks.items():
-                if stack[1] == 2:
-                    val += 3
-                else:
-                    val += stack[1]
-
-        if colour == BLACK:
-            for stack in self.black_stacks.items():
-                if stack[1] == 2:
-                    val += 3
-                else:
-                    val += stack[1]
-
-        return val"""
-
-    def kill_danger(self, colour, type):
-        eval = 0
-
-        if type == OUR_TURN:
-            for stack in self.get_colour(colour).keys():
-                stacks_indanger = list(in_danger(stack, self, colour))
-                for st in stacks_indanger:
-                    eval += self.get_colour(opponent(colour)).get(st)
-
-        if type == THEIR_TURN:
-            for stack in self.get_colour(opponent(colour)).keys():
-                stacks_indanger = in_danger(stack, self, opponent(colour))
-                for st in stacks_indanger:
-                    eval += self.get_colour(colour).get(st)
-
-        return eval
+    def weighted_piece_val(self, colour):
+        return ((0.95 ** self.total_pieces()) * (self.total_pieces(colour) - self.total_pieces(opponent(colour))))
 
     def num_groups(self, colour):
         """A group is defined as a set of pieces over one or more squares which would all be removed in
@@ -348,12 +300,10 @@ class Node:
         """"""
         # array of actions which we will return after we have filled it with possible (legal) moves
         actions = []
-
         # go through the list of applicable BOOM actions and add them to actions[]
         squares = self.state.get_squares(colour)
         for stack in squares:
             actions.append((BOOM, stack))
-
         # go through the list of applicable MOVE actions
         # for each item from .items() from a stack dictionary, item[0] is the (x, y) coordinates of of the stack and
         # item[1] is the number of pieces in the stack
@@ -406,26 +356,6 @@ def opponent(colour):
     if colour == BLACK:
         return WHITE
     return None
-
-
-def in_danger(stack, state, colour, stacks_indanger=None):
-    if stacks_indanger is None:
-        stacks_indanger = set()
-
-    radius_x = [stack[0], stack[0], stack[0] - 1, stack[0] - 1, stack[0] - 1, stack[0] + 1, stack[0] + 1, stack[0] + 1]
-    radius_y = [stack[1] - 1, stack[1] + 1, stack[1], stack[1] - 1, stack[1] + 1, stack[1], stack[1] - 1, stack[1] + 1]
-
-    radius = list(zip(radius_x, radius_y))
-    opp_stacks = state.get_colour(opponent(colour)).keys()
-    stacks_proximity = list(set(opp_stacks).intersection(radius))
-
-    for st in stacks_proximity:
-        if st not in stacks_indanger:
-            stacks_indanger.add(st)
-            in_danger(st, state, colour, stacks_indanger)
-
-    return stacks_indanger
-
 
 def manhattan_dist(state, colour):
     total = 0
@@ -602,6 +532,19 @@ def get_greedy_action(colour, base_node, budget):
 
     # make a copy of the initial node we were given
     # base_node = Node(current_node.state)
+
+    # check if we can make a book move
+    global in_book
+    if in_book and base_node.state.turn in book_moves[colour]:
+        # check if it is a legal move
+        move = book_moves[colour][base_node.state.turn]
+        # check if 1) the squre we are moving from is in our stack dictionay, 2) check if the move is not landing in an enemy stack square
+        if move[2] in base_node.state.get_colour(colour) and move[3] not in base_node.state.get_colour(
+                opponent(colour)):
+            return book_moves[colour][base_node.state.turn]
+        else:
+            in_book = False
+
     best_actions = []  # initialise the best_actions with a dummy value so our loop doesnt kick up a fuss when we try to access the [0] index for the first time
     best_score = LOST_GAME
     actions = base_node.get_possible_actions(colour)
@@ -668,7 +611,6 @@ def minimax(node, depth, maximising_player, colour):
 """def get_alphabeta_action(colour, node, budget):
     current_node = node.copy()
     first_moves = current_node.get_children(colour)
-
     best_move = None
     best_value = -INFINITY
     for i in range(len(first_moves)):
@@ -677,7 +619,6 @@ def minimax(node, depth, maximising_player, colour):
         if (value > best_value):
             best_move = child.move
             best_value = value
-
     return best_move"""
 
 
@@ -725,3 +666,20 @@ def minimax(node, depth, alpha, beta, maximising_player):
             if beta <= alpha:
                 return alpha
         return beta
+
+
+white_book = {
+    0: (MOVE, 1, (4, 1), (3, 1)),
+    2: (MOVE, 2, (3, 1), (3, 3)),
+    4: (MOVE, 1, (3, 3), (3, 5)),
+    #6: (MOVE, 1, (3, 1), (3, 5))
+}
+
+black_book = {
+    1: (MOVE, 1, (3, 6), (4, 6)),
+    3: (MOVE, 2, (4, 6), (4, 4)),
+    5: (MOVE, 1, (4, 4), (4, 2)),
+    #7: (MOVE, 1, (4, 6), (4, 2))
+}
+book_moves = {WHITE: white_book, BLACK: black_book}
+in_book = True
