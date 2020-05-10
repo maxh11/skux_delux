@@ -1,7 +1,7 @@
 import math
 import random
 import sys
-
+from configparser import ConfigParser
 
 LEFT = (-1, 0)
 RIGHT = (1, 0)
@@ -39,13 +39,18 @@ WEIGHT = {1: 12 / 12, 2: 11 / 12, 3: 10 / 12, 4: 9 / 12, 5: 8 / 12, 6: 7 / 12, 7
 EMPTY_STACK_NUMBERS = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0}
 
 num_pieces_evs = []
-w1 = 5
+
+parser = ConfigParser()
+parser.read('./minimax_player2/weights.ini')
+
+w1 = parser.getfloat('weights', 'w1')
 kill_danger_evs = []
-w2 = 0.1
+w2 = parser.getfloat('weights', 'w2')
 manhattan_dist_evs = []
-w3 = 0.1
+w3 = parser.getfloat('weights', 'w3')
 num_groups_evs = []
-w4 = 0.1
+w4 = parser.getfloat('weights', 'w4')
+
 
 class State:
     """State class to be associated with 1  The state is stored in the form of 2 dictionaries, one for white stacks
@@ -139,33 +144,6 @@ class State:
         random.shuffle(actions)
         #actions.sort(key=lambda x: x[0], reverse=True)
         return [x[1] for x in actions][0:math.ceil(len(actions) / 10)]
-
-    """def eval(self, colour=WHITE):
-        return 0
-        white_stack_numbers = dict(EMPTY_STACK_NUMBERS)
-        for stack_pieces in self.white_stacks.values():
-            white_stack_numbers[stack_pieces] += 1
-
-        black_stack_numbers = dict(EMPTY_STACK_NUMBERS)
-        for stack_pieces in self.black_stacks.values():
-            black_stack_numbers[stack_pieces] += 1
-
-      
-        eval = WEIGHT[1] * (white_stack_numbers[1] - black_stack_numbers[1]) \
-               + WEIGHT[2] * (white_stack_numbers[2] - black_stack_numbers[2]) \
-               + WEIGHT[1] * (white_stack_numbers[1] - black_stack_numbers[1])
-               etc...
-    
-        if colour == WHITE:
-            eval_sign = 1
-        else:
-            eval_sign = -1
-        ev = 0
-        for i in range(1, 13):
-            ev += WEIGHT[i] * ((white_stack_numbers[i] - black_stack_numbers[i]) * eval_sign)
-        # return ev + eval_sign * (self.total_white() - self.total_black())
-        # return ((self.total_white() * len(self.white_stacks)) - self.total_black() * len(self.black_stacks)) * eval_sign"""
-
     def evaluation(self, colour=WHITE):
         eval = 0
 
@@ -207,25 +185,6 @@ class State:
         eval += self.num_groups(colour) * w4
 
         return eval
-
-
-    """def piece_val(self, colour=WHITE):
-        val = 0
-        if colour == WHITE:
-            for stack in self.white_stacks.items():
-                if stack[1] == 2:
-                    val += 3
-                else:
-                    val += stack[1]
-
-        if colour == BLACK:
-            for stack in self.black_stacks.items():
-                if stack[1] == 2:
-                    val += 3
-                else:
-                    val += stack[1]
-
-        return val"""
 
     def kill_danger(self, colour, type):
         eval = 0
@@ -303,34 +262,6 @@ class Node:
         # else invalid action
         print("INVALID ACTION GIVEN TO .apply_action() in aiutils.py\n")
         return None
-
-    """def get_possible_actions(self, colour):
-        """"""Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
-        [(BOOM, (0, 2)), (BOOM, (0, 1)), (MOVE, 2, (0, 1), (2, 1)), (MOVE, 1, (7, 5), (7, 6)) ... etc]
-        """"""
-        # array of actions which we will return after we have filled it with possible (legal) moves
-        # actions = []
-
-        # go through the list of applicable BOOM actions and add them to actions[]
-        actions = self.state.get_nontrivial_boom_actions(colour) + self.state.get_non_trivial_move_actions(colour)
-        return actions
-
-        # go through the list of applicable MOVE actions
-        # for each item from .items() from a stack dictionary, item[0] is the (x, y) coordinates of of the stack and
-        # item[1] is the number of pieces in the stack
-        for stack in self.state.get_colour(colour).items():
-            # iterate through each possible number of pieces to move from our stack at the current occupied_square
-            for n_pieces in range(1, stack[1] + 1):
-                # possible moving directions
-                for move_direction in MOVE_DIRECTIONS:
-                    # number of squares to move n_pieces from current stack, 1 <= n_steps <= n_pieces
-                    for n_steps in range(1, stack[1] + 1):
-                        # check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of
-                        # bounds and not landing on an enemy piece)
-                        if is_legal_move(self.state.get_squares(opponent(colour)), stack[0], move_direction, n_steps):
-                            final_square = calculate_dest_square(stack[0], move_direction, n_steps)
-                            actions.append((MOVE, n_pieces, stack[0], final_square))
-        return actions"""
 
     def get_possible_actions(self, colour):
         """Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
@@ -627,46 +558,6 @@ def get_minimax_action(colour, base_node, budget):
 # node = 'current node being worked on'
 # depth = the amount of depth we have left to explore
 # colour = the current players turn
-"""
-def minimax(node, depth, maximising_player, colour):
-    if depth == 0 or is_game_over(node.state):
-        # print({WHITE: heuristic(WHITE, node.state), BLACK: heuristic(BLACK, node.state)})
-        return {WHITE: heuristic(WHITE, node.state), BLACK: heuristic(BLACK, node.state)}
-    if maximising_player:
-        best_value = {colour: LOST_GAME, opponent(colour): WIN_GAME}
-        actions = node.get_possible_actions(colour)
-        for action in actions:
-            current_node = node.apply_action(colour, action)
-            tmp = minimax(current_node, depth - 1, False, opponent(colour))
-            if tmp[colour] > best_value[colour]:
-                best_value[colour] = tmp[colour]
-                best_value[opponent(colour)] = tmp[opponent(colour)]
-        return best_value
-    else:
-        best_value = {colour: WIN_GAME, opponent(colour): LOST_GAME}
-        actions = node.get_possible_actions(colour)
-        for action in actions:
-            current_node = node.apply_action(colour, action)
-            tmp = minimax(current_node, depth - 1, True, opponent(colour))
-            if tmp[colour] < best_value[colour]:
-                best_value[colour] = tmp[colour]
-                best_value[opponent(colour)] = tmp[opponent(colour)]
-        return best_value
-"""
-"""def get_alphabeta_action(colour, node, budget):
-    current_node = node.copy()
-    first_moves = current_node.get_children(colour)
-
-    best_move = None
-    best_value = -INFINITY
-    for i in range(len(first_moves)):
-        child = first_moves[i]
-        value = minimax(child, budget, -INFINITY, INFINITY, False)
-        if (value > best_value):
-            best_move = child.move
-            best_value = value
-
-    return best_move"""
 
 def get_alphabeta_action(colour, node, budget):
     current_node = node.copy()

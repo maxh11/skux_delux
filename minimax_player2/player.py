@@ -88,17 +88,28 @@ class MinimaxPlayer:
                 sum1 += num_pieces_evs[i] * (math.tanh(num_pieces_evs[i]) - sn)
             w1new = w1 - 0.01 * sum1
             print(w1new)
+            parser.set('weights', 'w1', str(w1new))
+
             for i in range(len(kill_danger_evs)):
                 sum2 += kill_danger_evs[i] * (math.tanh(kill_danger_evs[i]) - sn)
             w2new = w2 - 0.01 * sum2
             print(w2new)
+            parser.set('weights', 'w2', str(w2new))
+
             for i in range(len(manhattan_dist_evs)):
                 sum3 += manhattan_dist_evs[i] * (1 - math.tanh(manhattan_dist_evs[i]) - sn)
             w3new = w3 - 0.01 * sum3
             print(w3new)
+            parser.set('weights', 'w3', str(w3new))
+
             for i in range(len(num_groups_evs)):
                 sum4 += num_groups_evs[i] * (math.tanh(num_groups_evs[i]) - sn)
             w4new = w4 - 0.01 * sum4
-            print(w4new)
+            parser.set('weights', 'w4', str(w4new))
+
+            # Writing our configuration file to 'example.ini'
+            with open('./minimax_player2/weights.ini', 'w') as configfile:
+                parser.write(configfile)
+            configfile.close()
 
         # print({WHITE: heuristic(WHITE, self.current_node.state), BLACK: heuristic(BLACK, self.current_node.state)})
