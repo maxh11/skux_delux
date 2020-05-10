@@ -41,7 +41,7 @@ EMPTY_STACK_NUMBERS = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10:
 num_pieces_evs = []
 
 parser = ConfigParser()
-parser.read('./tdleaf/weights.ini')
+parser.read('./tdleaf0/weights.ini')
 
 w1 = parser.getfloat('weights', 'w1')
 kill_danger_evs = []

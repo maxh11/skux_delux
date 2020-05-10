@@ -43,7 +43,7 @@ w1 = 5
 kill_danger_evs = []
 w2 = 0.1
 manhattan_dist_evs = []
-w3 = -0.1
+w3 = 0.1
 num_groups_evs = []
 w4 = 0.1
 
@@ -203,7 +203,7 @@ class State:
         #eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
         #eval += normalise(NUM_GROUPS, self.num_groups(colour)) - normalise(MANHATTAN, manhattan_dist(self, colour))
         #eval -= abs(math.tanh(manhattan_dist(self, colour)))
-        eval += manhattan_dist(self, colour) * w3
+        eval -= manhattan_dist(self, colour) * w3
         eval += self.num_groups(colour) * w4
 
         return eval

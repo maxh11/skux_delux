@@ -2,7 +2,6 @@ import math
 import random
 import sys
 
-
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 UP = (0, 1)
@@ -38,6 +37,15 @@ WEIGHT = {1: 12 / 12, 2: 11 / 12, 3: 10 / 12, 4: 9 / 12, 5: 8 / 12, 6: 7 / 12, 7
           10: 3 / 12, 11: 2 / 12, 12: 1 / 12}
 EMPTY_STACK_NUMBERS = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0}
 
+num_pieces_evs = []
+w1 = 5
+kill_danger_evs = []
+w2 = 0.1
+manhattan_dist_evs = []
+w3 = -0.1
+num_groups_evs = []
+w4 = 0.1
+
 
 class State:
     """State class to be associated with 1  The state is stored in the form of 2 dictionaries, one for white stacks
@@ -55,7 +63,7 @@ class State:
             self.black_stacks = dict(START_BLACK_STACKS)
         else:
             self.black_stacks = dict(black_stacks)
-        self.turn = 0
+        self.turn = turn
 
     def __eq__(self, other):
         return bool((self.white_stacks == other.white_stacks) and (self.black_stacks == other.black_stacks))
@@ -127,10 +135,10 @@ class State:
                         if is_legal_move(self.get_squares(opponent(colour)), stack[0], move_direction, n_steps):
                             final_square = calculate_dest_square(stack[0], move_direction, n_steps)
                             act = (MOVE, n_pieces, stack[0], final_square)
-                            actions.append((Node(self).apply_action(colour, act).state.num_groups(colour), act))
+                            actions.append((heuristic(colour, Node(self).apply_action(colour, act).state), act))
         random.shuffle(actions)
-        # actions.sort(key=lambda x: x[0], reverse=True)
-        return [x[1] for x in actions][0:math.ceil(len(actions) / 10)]
+        actions.sort(key=lambda x: x[0], reverse=True)
+        return [x[1] for x in actions][0:math.ceil(len(actions) / (3 / 2))]
 
     """def eval(self, colour=WHITE):
         return 0
@@ -171,12 +179,12 @@ class State:
             if self.total_white() == 0:
                 # lost game
                 return LOST_GAME
-            eval += 5 * (self.total_white() - self.total_black())
+            eval += w1 * (self.total_white() - self.total_black())
             # if it is white's turn, being close to black pieces is advantageous
             if self.turn % 2 == 0:
-                eval += 0.1 * self.kill_danger(colour, OUR_TURN)
+                eval += w2 * self.kill_danger(colour, OUR_TURN)
             else:
-                eval -= 0.1 * self.kill_danger(colour, THEIR_TURN)
+                eval -= w2 * self.kill_danger(colour, THEIR_TURN)
         if colour == BLACK:
             if self.total_white() == 0:
                 # win game
@@ -184,19 +192,19 @@ class State:
             if self.total_black() == 0:
                 # lost game
                 return LOST_GAME
-            eval += 5 * (self.total_black() - self.total_white())
+            eval += w1 * (self.total_black() - self.total_white())
             # if we are black and it is white's turn, being close to white pieces is detrimental.
             if self.turn % 2 == 0:
-                eval -= 0.1 * self.kill_danger(colour, THEIR_TURN)
+                eval -= w2 * self.kill_danger(colour, THEIR_TURN)
             else:
-                eval += 0.1 * self.kill_danger(colour, OUR_TURN)
+                eval += w2 * self.kill_danger(colour, OUR_TURN)
 
         # eval += self.piece_val(colour) - self.piece_val(opponent(colour))
         # eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
         # eval += normalise(NUM_GROUPS, self.num_groups(colour)) - normalise(MANHATTAN, manhattan_dist(self, colour))
         # eval -= abs(math.tanh(manhattan_dist(self, colour)))
-        eval -= manhattan_dist(self, colour) * 0.1
-        eval += self.num_groups(colour) * 0.1
+        eval += manhattan_dist(self, colour) * w3
+        eval += self.num_groups(colour) * w4
 
         return eval
 
@@ -294,38 +302,45 @@ class Node:
         print("INVALID ACTION GIVEN TO .apply_action() in aiutils.py\n")
         return None
 
-    """def get_possible_actions(self, colour):
-        """"""Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
-        [(BOOM, (0, 2)), (BOOM, (0, 1)), (MOVE, 2, (0, 1), (2, 1)), (MOVE, 1, (7, 5), (7, 6)) ... etc]
-        """"""
-        # array of actions which we will return after we have filled it with possible (legal) moves
-        # actions = []
-
-        # go through the list of applicable BOOM actions and add them to actions[]
-        actions = self.state.get_nontrivial_boom_actions(colour) + self.state.get_non_trivial_move_actions(colour)
-        return actions
-
-        # go through the list of applicable MOVE actions
-        # for each item from .items() from a stack dictionary, item[0] is the (x, y) coordinates of of the stack and
-        # item[1] is the number of pieces in the stack
-        for stack in self.state.get_colour(colour).items():
-            # iterate through each possible number of pieces to move from our stack at the current occupied_square
-            for n_pieces in range(1, stack[1] + 1):
-                # possible moving directions
-                for move_direction in MOVE_DIRECTIONS:
-                    # number of squares to move n_pieces from current stack, 1 <= n_steps <= n_pieces
-                    for n_steps in range(1, stack[1] + 1):
-                        # check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of
-                        # bounds and not landing on an enemy piece)
-                        if is_legal_move(self.state.get_squares(opponent(colour)), stack[0], move_direction, n_steps):
-                            final_square = calculate_dest_square(stack[0], move_direction, n_steps)
-                            actions.append((MOVE, n_pieces, stack[0], final_square))
-        return actions"""
-
     def get_possible_actions(self, colour):
         """Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
         [(BOOM, (0, 2)), (BOOM, (0, 1)), (MOVE, 2, (0, 1), (2, 1)), (MOVE, 1, (7, 5), (7, 6)) ... etc]
         """
+        # array of actions which we will return after we have filled it with possible (legal) moves
+        actions = []
+
+        # go through the list of applicable BOOM actions and add them to actions[]
+        squares = self.state.get_squares(colour)
+        for stack in squares:
+            actions.append((BOOM, stack))
+
+        if self.state.total_pieces() > 10:
+            # go through the list of applicable BOOM actions and add them to actions[]
+            actions += self.state.get_non_trivial_move_actions(colour)
+            return actions
+        else:
+            # go through the list of applicable MOVE actions
+            # for each item from .items() from a stack dictionary, item[0] is the (x, y) coordinates of of the stack and
+            # item[1] is the number of pieces in the stack
+            for stack in self.state.get_colour(colour).items():
+                # iterate through each possible number of pieces to move from our stack at the current occupied_square
+                for n_pieces in range(1, stack[1] + 1):
+                    # possible moving directions
+                    for move_direction in MOVE_DIRECTIONS:
+                        # number of squares to move n_pieces from current stack, 1 <= n_steps <= n_pieces
+                        for n_steps in range(1, stack[1] + 1):
+                            # check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of
+                            # bounds and not landing on an enemy piece)
+                            if is_legal_move(self.state.get_squares(opponent(colour)), stack[0], move_direction,
+                                             n_steps):
+                                final_square = calculate_dest_square(stack[0], move_direction, n_steps)
+                                actions.append((MOVE, n_pieces, stack[0], final_square))
+            return actions
+
+    """def get_possible_actions(self, colour):
+        """"""Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
+        [(BOOM, (0, 2)), (BOOM, (0, 1)), (MOVE, 2, (0, 1), (2, 1)), (MOVE, 1, (7, 5), (7, 6)) ... etc]
+        """"""
         # array of actions which we will return after we have filled it with possible (legal) moves
         actions = []
 
@@ -349,7 +364,7 @@ class Node:
                         if is_legal_move(self.state.get_squares(opponent(colour)), stack[0], move_direction, n_steps):
                             final_square = calculate_dest_square(stack[0], move_direction, n_steps)
                             actions.append((MOVE, n_pieces, stack[0], final_square))
-        return actions
+        return actions"""
 
     def get_children(self, colour):
         children = []
@@ -483,6 +498,7 @@ def boom_action(colour, base_node, stack_to_boom):
     new_node.parent = base_node
     # new_node depth is parent depth + 1
     new_node.depth = base_node.depth + 1
+    new_node.state.turn = base_node.state.turn + 1
     # store the move which got us to new_node
     new_node.move = (BOOM, stack_to_boom)
     new_node.last_colour = colour
@@ -511,9 +527,8 @@ def heuristic(colour, state):
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
         # distance, **higer** is better
         # return state.eval(colour)
-        return state.total_white() - state.total_black() - abs(math.tanh(manhattan_dist(
-            state,
-            colour)))  # + math.tanh(state.num_groups(WHITE)) #- abs( math.tanh(manhattan_dist(state)) ) # - manhattan_dist(state)
+        return state.total_white() - state.total_black()  # - abs(math.tanh(manhattan_dist(
+        # state,colour)))  # + math.tanh(state.num_groups(WHITE)) #- abs( math.tanh(manhattan_dist(state)) ) # - manhattan_dist(state)
 
     if colour == BLACK:
         if state.total_white() == 0:
@@ -525,9 +540,8 @@ def heuristic(colour, state):
         # else, the heuristic is the number of our pieces on the board - enemy pieces on the board + manhattan
         # distance, **higer** is better
         # return state.eval(colour)
-        return state.total_black() - state.total_white() - abs(math.tanh(
-            manhattan_dist(state,
-                           colour)))  # + math.tanh(state.num_groups(BLACK)) #- abs( math.tanh(manhattan_dist(state)) )
+        return state.total_black() - state.total_white()  # - abs(math.tanh(
+        # manhattan_dist(state, colour)))  # + math.tanh(state.num_groups(BLACK)) #- abs( math.tanh(manhattan_dist(state)) )
 
     # else, incorrect colour given return None
     return None
@@ -646,7 +660,6 @@ def minimax(node, depth, maximising_player, colour):
                 best_value[opponent(colour)] = tmp[opponent(colour)]
         return best_value
 """
-
 """def get_alphabeta_action(colour, node, budget):
     current_node = node.copy()
     first_moves = current_node.get_children(colour)
@@ -675,7 +688,9 @@ def get_alphabeta_action(colour, node, budget):
             moves[value].append(child.move)
         else:
             moves[value] = [child.move]
-    return random.choice(moves[max(moves)])
+
+    best_move = random.choice(moves[max(moves)])
+    return best_move
 
 
 def minimax(node, depth, alpha, beta, maximising_player):
@@ -705,47 +720,3 @@ def minimax(node, depth, alpha, beta, maximising_player):
             if beta <= alpha:
                 return alpha
         return beta
-
-def max_value(node, alpha, beta, depth):
-    if depth == 0:
-        return node.value
-    current_node = node.copy()
-    v = -INFINITY
-    children = current_node.get_children(opponent(current_node.last_colour))
-    children.sort(key=lambda x: x.value, reverse=True)
-    for i in range(len(children)):
-        v = max(v, min_value(children[i], alpha, beta, depth - 1))
-        if v >= beta:
-            return v
-        alpha = max(alpha, v)
-    return v
-
-def min_value(node, alpha, beta, depth):
-    if depth == 0:
-        return node.value
-    current_node = node.copy()
-    v = INFINITY
-    children = current_node.get_children(opponent(current_node.last_colour))
-    children.sort(key=lambda x: x.value, reverse=False)
-    for i in range(len(children)):
-        v = min(v, max_value(children[i], alpha, beta, depth - 1))
-        if v <= alpha:
-            return v
-        beta = min(beta, v)
-    return v
-
-def alpha_beta_revised(node, budget, colour):
-    current_node = node.copy()
-    best_score = -INFINITY
-    beta = INFINITY
-    best_action = None
-
-    first_moves = current_node.get_children(colour)
-
-    for i in range(len(first_moves)):
-        v = min_value(first_moves[i], best_score, beta, budget)
-        if v > best_score:
-            best_score = v
-            best_action = first_moves[i]
-
-    return best_action

@@ -87,33 +87,37 @@ class MinimaxPlayer:
             sum2 = 0
             sum3 = 0
             sum4 = 0
+            num_pieces_evs.append(sn)
+            kill_danger_evs.append(sn)
+            manhattan_dist_evs.append(sn)
+            num_groups_evs.append(sn)
 
-            for i in range(len(num_pieces_evs)):
-                sum1 += num_pieces_evs[i] * (math.tanh(num_pieces_evs[i]) - sn)
+            for i in (range(len(num_pieces_evs))-1):
+                sum1 += num_pieces_evs[i] * (math.tanh(num_pieces_evs[i]) - math.tanh(num_pieces_evs[i+1]))
             w1new = w1 - 0.005 * sum1
             print(w1new)
             parser.set('weights', 'w1', str(w1new))
 
-            for i in range(len(kill_danger_evs)):
-                sum2 += kill_danger_evs[i] * (math.tanh(kill_danger_evs[i]) - sn)
+            for i in (range(len(kill_danger_evs))-1):
+                sum2 += kill_danger_evs[i] * (math.tanh(kill_danger_evs[i]) - math.tanh(kill_danger_evs[i+1]))
             w2new = w2 - 0.005 * sum2
             print(w2new)
             parser.set('weights', 'w2', str(w2new))
 
-            for i in range(len(manhattan_dist_evs)):
-                sum3 += manhattan_dist_evs[i] * (math.tanh(manhattan_dist_evs[i]) - sn)
-            w3new = w3 - 0.005 * sum3
+            for i in (range(len(manhattan_dist_evs))-1):
+                sum3 += manhattan_dist_evs[i] * (math.tanh(manhattan_dist_evs[i]) - math.tanh(manhattan_dist_evs[i+1]))
+            w3new = w3 + 0.005 * sum3
             print(w3new)
             parser.set('weights', 'w3', str(w3new))
 
-            for i in range(len(num_groups_evs)):
-                sum4 += num_groups_evs[i] * (math.tanh(num_groups_evs[i]) - sn)
+            for i in (range(len(num_groups_evs))-1):
+                sum4 += num_groups_evs[i] * (math.tanh(num_groups_evs[i]) - math.tanh(num_groups_evs[i+1]))
             w4new = w4 - 0.005 * sum4
             print(w4new)
             parser.set('weights', 'w4', str(w4new))
 
             # Writing our configuration file to 'example.ini'
-            with open('./tdleaf/weights.ini', 'w') as configfile:
+            with open('./tdleaf0/weights.ini', 'w') as configfile:
                 parser.write(configfile)
             configfile.close()
 
