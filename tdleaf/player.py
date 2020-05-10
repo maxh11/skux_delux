@@ -67,20 +67,29 @@ class MinimaxPlayer:
         num_groups_evs.append(self.current_node.state.num_groups(colour))
         # Game over, start td leaf lambda learning being white player always
         if is_game_over(self.current_node.state):
-
-            if colour == WHITE and self.current_node.state.total_black() == 0:
-                # game won, sn = 1
-                sn = 1
-            elif colour == WHITE and self.current_node.state.total_white() == 0:
-                # game lost, sn = -1
-                sn = -1
-            elif colour == BLACK and self.current_node.state.total_white() == 0:
-                sn = 1
-            elif colour == BLACK and self.current_node.state.total_black() == 0:
-                sn = -1
-            else:
-                # game drew, sn = 0
+            # draw game
+            if self.current_node.state.total_white() == self.current_node.state.total_white():
                 sn = 0
+            # we played as WHITE
+            if self.colour == WHITE:
+                # game won, sn = 1
+                if self.current_node.state.total_black() == 0:
+                    sn = 1
+                # lost game, sn = -1
+                elif self.current_node.state.total_white() == 0:
+                    sn = -1
+                else:
+                    print("TDLEAF ERROR. GAME NOT FINISHED\n")
+            # we played as BLACK
+            else:
+                # game won, sn = 1
+                if self.current_node.state.total_white() == 0:
+                    sn = 1
+                # lost game, sn = -1
+                elif self.current_node.state.total_black() == 0:
+                    sn = -1
+                else:
+                    print("TDLEAF ERROR. GAME NOT FINISHED\n")
 
             print(sn)
             sum1 = 0
@@ -116,5 +125,3 @@ class MinimaxPlayer:
             with open('./tdleaf/weights.ini', 'w') as configfile:
                 parser.write(configfile)
             configfile.close()
-
-        # print({WHITE: heuristic(WHITE, self.current_node.state), BLACK: heuristic(BLACK, self.current_node.state)})
