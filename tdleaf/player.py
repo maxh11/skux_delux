@@ -80,6 +80,7 @@ class MinimaxPlayer:
                     sn = -1
                 else:
                     print("TDLEAF ERROR. GAME NOT FINISHED\n")
+                    exit(0)
             # we played as BLACK
             else:
                 # game won, sn = 1
@@ -90,6 +91,7 @@ class MinimaxPlayer:
                     sn = -1
                 else:
                     print("TDLEAF ERROR. GAME NOT FINISHED\n")
+                    exit(0)
 
             print(sn)
             sum1 = 0
