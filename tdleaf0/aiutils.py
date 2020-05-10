@@ -647,53 +647,6 @@ def get_minimax_action(colour, base_node, budget):
     # find the best action in those actions and return it. Break draws randomly
     return random.choice(best_actions)
 
-
-# returns {WHITE: white heuristic, BLACK: black heuristic}
-# node = 'current node being worked on'
-# depth = the amount of depth we have left to explore
-# colour = the current players turn
-"""
-def minimax(node, depth, maximising_player, colour):
-    if depth == 0 or is_game_over(node.state):
-        # print({WHITE: heuristic(WHITE, node.state), BLACK: heuristic(BLACK, node.state)})
-        return {WHITE: heuristic(WHITE, node.state), BLACK: heuristic(BLACK, node.state)}
-    if maximising_player:
-        best_value = {colour: LOST_GAME, opponent(colour): WIN_GAME}
-        actions = node.get_possible_actions(colour)
-        for action in actions:
-            current_node = node.apply_action(colour, action)
-            tmp = minimax(current_node, depth - 1, False, opponent(colour))
-            if tmp[colour] > best_value[colour]:
-                best_value[colour] = tmp[colour]
-                best_value[opponent(colour)] = tmp[opponent(colour)]
-        return best_value
-    else:
-        best_value = {colour: WIN_GAME, opponent(colour): LOST_GAME}
-        actions = node.get_possible_actions(colour)
-        for action in actions:
-            current_node = node.apply_action(colour, action)
-            tmp = minimax(current_node, depth - 1, True, opponent(colour))
-            if tmp[colour] < best_value[colour]:
-                best_value[colour] = tmp[colour]
-                best_value[opponent(colour)] = tmp[opponent(colour)]
-        return best_value
-"""
-"""def get_alphabeta_action(colour, node, budget):
-    current_node = node.copy()
-    first_moves = current_node.get_children(colour)
-
-    best_move = None
-    best_value = -INFINITY
-    for i in range(len(first_moves)):
-        child = first_moves[i]
-        value = minimax(child, budget, -INFINITY, INFINITY, False)
-        if (value > best_value):
-            best_move = child.move
-            best_value = value
-
-    return best_move"""
-
-
 def get_alphabeta_action(colour, node, budget):
     current_node = node.copy()
     first_moves = current_node.get_children(colour)

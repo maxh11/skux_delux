@@ -665,19 +665,17 @@ def minimax(node, depth, alpha, beta, maximising_player):
 
 
 white_book = {
-    0: (MOVE, 1, (3, 1), (4, 1)),
-    2: (MOVE, 1, (7, 1), (6, 1)),
-    4: (MOVE, 2, (4, 1), (5, 1)),
-    6: (MOVE, 2, (6, 1), (5, 1)),
-    8: (MOVE, 1, (5, 1), (5, 5))
+    0: (MOVE, 1, (4, 0), (3, 0)),
+    2: (MOVE, 1, (4, 1), (3, 1)),
+    4: (MOVE, 2, (3, 0), (3, 1)),
+    6: (MOVE, 1, (3, 1), (3, 5))
 }
 
 black_book = {
-    1: (MOVE, 1, (4, 6), (3, 6)),
-    3: (MOVE, 1, (0, 6), (1, 6)),
-    5: (MOVE, 2, (3, 6), (2, 6)),
-    7: (MOVE, 2, (1, 6), (2, 6)),
-    9: (MOVE, 1, (2, 6), (2, 2))
+    1: (MOVE, 1, (3, 7), (4, 7)),
+    3: (MOVE, 1, (3, 6), (4, 6)),
+    5: (MOVE, 2, (4, 7), (4, 6)),
+    7: (MOVE, 1, (4, 6), (4, 2))
 }
 book_moves = {WHITE: white_book, BLACK: black_book}
 in_book = True
