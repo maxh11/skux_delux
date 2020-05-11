@@ -105,9 +105,9 @@ class MinimaxPlayer:
             parser.set('weights', 'w1', str(w1new))
 
             for i in range(len(manhattan_dist_evs)):
-                sum3 += manhattan_dist_evs[i] * (math.tanh(manhattan_dist_evs[i]) - sn)
-            w2new = w2 - 0.005 * sum2
-            print(w3new)
+                sum2 += manhattan_dist_evs[i] * (math.tanh(manhattan_dist_evs[i]) - sn)
+            w2new = w2 + 0.005 * sum2
+            print(w2new)
             parser.set('weights', 'w2', str(w2new))
 
             for i in range(len(num_groups_evs)):

@@ -173,12 +173,8 @@ class State:
             if self.total_white() == 0:
                 # lost game
                 return LOST_GAME
-            eval += w1 * (self.total_white() - self.total_black())
+            # eval += w1 * (self.total_white() - self.total_black())
             # if it is white's turn, being close to black pieces is advantageous
-            if self.turn % 2 == 0:
-                eval += w2 * self.kill_danger(colour, OUR_TURN)
-            else:
-                eval -= w2 * self.kill_danger(colour, THEIR_TURN)
         if colour == BLACK:
             if self.total_white() == 0:
                 # win game
@@ -186,12 +182,7 @@ class State:
             if self.total_black() == 0:
                 # lost game
                 return LOST_GAME
-            eval += w1 * (self.total_black() - self.total_white())
-            # if we are black and it is white's turn, being close to white pieces is detrimental.
-            if self.turn % 2 == 0:
-                eval -= w2 * self.kill_danger(colour, THEIR_TURN)
-            else:
-                eval += w2 * self.kill_danger(colour, OUR_TURN)
+            #eval += w1 * (self.total_black() - self.total_white())
 
         # eval += self.piece_val(colour) - self.piece_val(opponent(colour))
         # eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
@@ -206,7 +197,7 @@ class State:
         return eval
 
     def weighted_piece_val(self, colour):
-        return ((0.95 ** self.total_pieces()) * (self.total_pieces(colour) - self.total_pieces(opponent(colour))))
+        return (0.90 ** self.total_pieces()) * (self.total_pieces(colour) - self.total_pieces(opponent(colour)))
 
     def num_groups(self, colour):
         """A group is defined as a set of pieces over one or more squares which would all be removed in
@@ -335,14 +326,6 @@ class Node:
         for action in actions:
             children.append(self.apply_action(colour, action))
         return children
-
-
-def normalise(type, value):
-    if type == "md":
-        return (value - 0.5) / (7.5 - 0.5)
-    if type == "ng":
-        return (value - 1) / (4 - 1)
-
 
 def is_legal_move(enemy_stack_locations, moving_stack_location, move_direction, n_steps):
     """ check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of bounds and not

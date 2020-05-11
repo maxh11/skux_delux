@@ -327,13 +327,6 @@ class Node:
         return children
 
 
-def normalise(type, value):
-    if type == "md":
-        return (value - 0.5) / (7.5 - 0.5)
-    if type == "ng":
-        return (value - 1) / (4 - 1)
-
-
 def is_legal_move(enemy_stack_locations, moving_stack_location, move_direction, n_steps):
     """ check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of bounds and not
     landing on an enemy piece) """
