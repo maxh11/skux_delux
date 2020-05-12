@@ -1,5 +1,5 @@
 import random
-from .aiutils import *
+from skux_delux.aiutils import *
 
 budget = 2
 
