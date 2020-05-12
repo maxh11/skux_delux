@@ -5,4 +5,4 @@
 # example import below, you can define it in another file and import
 # it into this module with the name 'Player':
 
-from skux_delux.player import SkuxPlayer as Player
+from .player import MinimaxPlayer as Player

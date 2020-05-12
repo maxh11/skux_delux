@@ -43,6 +43,8 @@ class MinimaxPlayer:
             return get_greedy_action(self.colour, self.current_node, budget)
         if self.current_node.state.total_pieces() < 7:
             return get_alphabeta_action(self.colour, self.current_node, budget * 2)
+        elif self.current_node.state.total_pieces() < 4:
+            return get_alphabeta_action(self.colour, self.current_node, budget * 3)
 
         return get_alphabeta_action(self.colour, self.current_node, budget)
 
@@ -67,29 +69,30 @@ class MinimaxPlayer:
             num_pieces_evs.append(self.current_node.state.weighted_piece_val(self.colour))
             manhattan_dist_evs.append(manhattan_dist(self.current_node.state, self.colour))
             num_groups_evs.append(self.current_node.state.num_groups(self.colour))
+            eval_evs.append(self.current_node.value)
         # Game over, start td leaf lambda learning being white player always
         if is_game_over(self.current_node.state):
             # draw game
-            if self.current_node.state.total_white() == self.current_node.state.total_white():
-                sn = 0
+            if self.current_node.state.total_white() == self.current_node.state.total_black():
+                sn = DRAW_GAME
             # we played as WHITE
-            if self.colour == WHITE:
+            elif self.colour == WHITE:
                 # game won, sn = 1
                 if self.current_node.state.total_black() == 0:
-                    sn = 1
+                    sn = WIN_GAME
                 # lost game, sn = -1
                 elif self.current_node.state.total_white() == 0:
-                    sn = -1
+                    sn = LOST_GAME
                 else:
                     print("TDLEAF ERROR. GAME NOT FINISHED\n")
             # we played as BLACK
             else:
                 # game won, sn = 1
                 if self.current_node.state.total_white() == 0:
-                    sn = 1
+                    sn = WIN_GAME
                 # lost game, sn = -1
                 elif self.current_node.state.total_black() == 0:
-                    sn = -1
+                    sn = LOST_GAME
                 else:
                     print("TDLEAF ERROR. GAME NOT FINISHED\n")
 
@@ -100,23 +103,23 @@ class MinimaxPlayer:
             num_pieces_evs.append(sn)
             manhattan_dist_evs.append(sn)
             num_groups_evs.append(sn)
+            eval_evs.append(sn)
 
             for i in (range(len(num_pieces_evs)-1)):
-                sum1 += num_pieces_evs[i] * (math.tanh(num_pieces_evs[i]) - math.tanh(num_pieces_evs[i+1]))
-            w1new = w1 - 0.005 * sum1
+                sum1 += num_pieces_evs[i] * (math.tanh(eval_evs[i]) - math.tanh(eval_evs[i+1]))
+            w1new = w1 - 0.01 * sum1
             print(w1new)
             parser.set('weights', 'w1', str(w1new))
 
             for i in (range(len(manhattan_dist_evs) - 1)):
-                sum2 += manhattan_dist_evs[i] * (
-                            math.tanh(manhattan_dist_evs[i]) - math.tanh(manhattan_dist_evs[i + 1]))
-            w2new = w2 + 0.005 * sum2
+                sum2 += manhattan_dist_evs[i] * (math.tanh(eval_evs[i]) - math.tanh(eval_evs[i+1]))
+            w2new = w2 - 0.01 * sum2
             print(w2new)
             parser.set('weights', 'w2', str(w2new))
 
             for i in (range(len(num_groups_evs)-1)):
-                sum3 += num_groups_evs[i] * (math.tanh(num_groups_evs[i]) - math.tanh(num_groups_evs[i+1]))
-            w3new = w3 - 0.005 * sum3
+                sum3 += num_groups_evs[i] * (math.tanh(eval_evs[i]) - math.tanh(eval_evs[i+1]))
+            w3new = w3 - 0.01 * sum3
             print(w3new)
             parser.set('weights', 'w3', str(w3new))
 

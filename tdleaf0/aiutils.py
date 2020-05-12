@@ -43,6 +43,8 @@ w2 = parser.getfloat('weights', 'w2')
 num_groups_evs = []
 w3 = parser.getfloat('weights', 'w3')
 
+eval_evs = []
+
 
 
 
@@ -174,7 +176,7 @@ class State:
             if self.total_white() == 0:
                 # lost game
                 return LOST_GAME
-            eval += w1 * (self.total_white() - self.total_black())
+
         if colour == BLACK:
             if self.total_white() == 0:
                 # win game
@@ -182,7 +184,6 @@ class State:
             if self.total_black() == 0:
                 # lost game
                 return LOST_GAME
-            eval += w1 * (self.total_black() - self.total_white())
 
         # eval += self.piece_val(colour) - self.piece_val(opponent(colour))
         # eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
@@ -191,7 +192,7 @@ class State:
 
         eval += w1 * self.weighted_piece_val(colour)
 
-        eval += manhattan_dist(self, colour) * w2
+        eval -= manhattan_dist(self, colour) * w2
 
         eval += self.num_groups(colour) * w3
 

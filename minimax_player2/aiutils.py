@@ -41,6 +41,7 @@ w3 = 0.1
 num_groups_evs = []
 w4 = 0.1
 
+
 class State:
     """State class to be associated with 1  The state is stored in the form of 2 dictionaries, one for white stacks
     and one for black stacks. Each dict has keys which are the (x, y) coordinates of a square where there is at least 1

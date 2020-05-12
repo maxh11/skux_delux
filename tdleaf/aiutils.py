@@ -43,6 +43,7 @@ manhattan_dist_evs = []
 w2 = parser.getfloat('weights', 'w2')
 num_groups_evs = []
 w3 = parser.getfloat('weights', 'w3')
+eval_evs = []
 
 
 class State:
@@ -173,12 +174,7 @@ class State:
             if self.total_white() == 0:
                 # lost game
                 return LOST_GAME
-            eval += w1 * (self.total_white() - self.total_black())
-            # if it is white's turn, being close to black pieces is advantageous
-            if self.turn % 2 == 0:
-                eval += w2 * self.kill_danger(colour, OUR_TURN)
-            else:
-                eval -= w2 * self.kill_danger(colour, THEIR_TURN)
+
         if colour == BLACK:
             if self.total_white() == 0:
                 # win game
@@ -186,12 +182,6 @@ class State:
             if self.total_black() == 0:
                 # lost game
                 return LOST_GAME
-            eval += w1 * (self.total_black() - self.total_white())
-            # if we are black and it is white's turn, being close to white pieces is detrimental.
-            if self.turn % 2 == 0:
-                eval -= w2 * self.kill_danger(colour, THEIR_TURN)
-            else:
-                eval += w2 * self.kill_danger(colour, OUR_TURN)
 
         # eval += self.piece_val(colour) - self.piece_val(opponent(colour))
         # eval += abs(math.tanh(self.num_groups(colour))) - abs(math.tanh(manhattan_dist(self, colour)))
@@ -199,7 +189,7 @@ class State:
         # eval -= abs(math.tanh(manhattan_dist(self, colour)))
         eval += w1 * self.weighted_piece_val(colour)
 
-        eval += manhattan_dist(self, colour) * w2
+        eval -= manhattan_dist(self, colour) * w2
 
         eval += self.num_groups(colour) * w3
 
@@ -279,28 +269,22 @@ class Node:
         for stack in squares:
             actions.append((BOOM, stack))
 
-        if self.state.total_pieces() > 10:
-            # go through the list of applicable BOOM actions and add them to actions[]
-            actions += self.state.get_non_trivial_move_actions(colour)
-            return actions
-        else:
-            # go through the list of applicable MOVE actions
-            # for each item from .items() from a stack dictionary, item[0] is the (x, y) coordinates of of the stack and
-            # item[1] is the number of pieces in the stack
-            for stack in self.state.get_colour(colour).items():
-                # iterate through each possible number of pieces to move from our stack at the current occupied_square
-                for n_pieces in range(1, stack[1] + 1):
-                    # possible moving directions
-                    for move_direction in MOVE_DIRECTIONS:
-                        # number of squares to move n_pieces from current stack, 1 <= n_steps <= n_pieces
-                        for n_steps in range(1, stack[1] + 1):
-                            # check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of
-                            # bounds and not landing on an enemy piece)
-                            if is_legal_move(self.state.get_squares(opponent(colour)), stack[0], move_direction,
-                                             n_steps):
-                                final_square = calculate_dest_square(stack[0], move_direction, n_steps)
-                                actions.append((MOVE, n_pieces, stack[0], final_square))
-            return actions
+        # go through the list of applicable MOVE actions
+        # for each item from .items() from a stack dictionary, item[0] is the (x, y) coordinates of of the stack and
+        # item[1] is the number of pieces in the stack
+        for stack in self.state.get_colour(colour).items():
+            # iterate through each possible number of pieces to move from our stack at the current occupied_square
+            for n_pieces in range(1, stack[1] + 1):
+                # possible moving directions
+                for move_direction in MOVE_DIRECTIONS:
+                    # number of squares to move n_pieces from current stack, 1 <= n_steps <= n_pieces
+                    for n_steps in range(1, stack[1] + 1):
+                        # check if moving n_steps in move_direction from current stack is a legal move (i.e. not out of
+                        # bounds and not landing on an enemy piece)
+                        if is_legal_move(self.state.get_squares(opponent(colour)), stack[0], move_direction, n_steps):
+                            final_square = calculate_dest_square(stack[0], move_direction, n_steps)
+                            actions.append((MOVE, n_pieces, stack[0], final_square))
+        return actions
 
     """def get_possible_actions(self, colour):
         """"""Return a list of legal actions for 'colour' from the current node's state E.g. could return something like
