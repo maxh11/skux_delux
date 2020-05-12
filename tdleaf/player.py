@@ -70,27 +70,27 @@ class MinimaxPlayer:
             eval_evs.append(self.current_node.value)
         # Game over, start td leaf lambda learning being white player always
         if is_game_over(self.current_node.state):
-            # draw game
+            # draw game, sn = 0, where sn is the reward at the final state.
             if self.current_node.state.total_white() == self.current_node.state.total_black():
-                sn = DRAW_GAME
+                sn = 0
             # we played as WHITE
             elif self.colour == WHITE:
                 # game won, sn = 1
                 if self.current_node.state.total_black() == 0:
-                    sn = WIN_GAME
+                    sn = 1
                 # lost game, sn = -1
                 elif self.current_node.state.total_white() == 0:
-                    sn = LOST_GAME
+                    sn = -1
                 else:
                     print("TDLEAF ERROR. GAME NOT FINISHED\n")
             # we played as BLACK
             else:
                 # game won, sn = 1
                 if self.current_node.state.total_white() == 0:
-                    sn = WIN_GAME
+                    sn = 1
                 # lost game, sn = -1
                 elif self.current_node.state.total_black() == 0:
-                    sn = LOST_GAME
+                    sn = -1
                 else:
                     print("TDLEAF ERROR. GAME NOT FINISHED\n")
 
@@ -98,30 +98,26 @@ class MinimaxPlayer:
             sum1 = 0
             sum2 = 0
             sum3 = 0
-            num_pieces_evs.append(sn)
-            manhattan_dist_evs.append(sn)
-            num_groups_evs.append(sn)
-            eval_evs.append(sn)
 
             for i in (range(len(num_pieces_evs) - 1)):
-                sum1 += num_pieces_evs[i] * (math.tanh(eval_evs[i]) - math.tanh(eval_evs[i + 1]))
+                sum1 += num_pieces_evs[i] * (math.tanh(eval_evs[i]) - sn)
             w1new = w1 - 0.01 * sum1
             print(w1new)
             parser.set('weights', 'w1', str(w1new))
 
             for i in (range(len(manhattan_dist_evs) - 1)):
-                sum2 += manhattan_dist_evs[i] * (math.tanh(eval_evs[i]) - math.tanh(eval_evs[i + 1]))
+                sum2 += manhattan_dist_evs[i] * (math.tanh(eval_evs[i]) - sn)
             w2new = w2 - 0.01 * sum2
             print(w2new)
             parser.set('weights', 'w2', str(w2new))
 
             for i in (range(len(num_groups_evs) - 1)):
-                sum3 += num_groups_evs[i] * (math.tanh(eval_evs[i]) - math.tanh(eval_evs[i + 1]))
+                sum3 += num_groups_evs[i] * (math.tanh(eval_evs[i]) - sn)
             w3new = w3 - 0.01 * sum3
             print(w3new)
             parser.set('weights', 'w3', str(w3new))
 
             # Writing our configuration file to 'example.ini'
-            with open('./tdleaf0/weights.ini', 'w') as configfile:
+            with open('./tdleaf/weights.ini', 'w') as configfile:
                 parser.write(configfile)
             configfile.close()
