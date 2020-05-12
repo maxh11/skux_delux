@@ -29,9 +29,8 @@ START_WHITE_STACKS = {
 
 # weights
 w1 = 5  # pieces
-w2 = 0.1  # no longer in use
-w3 = 0.1  # manhattan distance
-w4 = 0.1  # num_groups
+w2 = 0.1  # manhattan distance
+w3 = 0.1  # num groups
 
 
 class State:
@@ -116,11 +115,11 @@ class State:
                 # lost game
                 return LOST_GAME
 
-        eval -= w3 * manhattan_dist(self, colour)
-
         eval += w1 * self.discounted_piece_value(colour)
 
-        eval += w4 * self.num_groups(colour)
+        eval -= w2 * manhattan_dist(self, colour)
+
+        eval += w3 * self.num_groups(colour)
 
         return eval
 
