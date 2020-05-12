@@ -1,9 +1,15 @@
 import random
 from .aiutils import *
 
-budget = 2
+"""Actions syntax:
+    ("MOVE", n, (xa, ya), (xb, yb))
+    ("BOOM", (x, y))
+"""
 
-class MinimaxPlayer:
+budget = 100
+
+
+class GreedyPlayer:
     def __init__(self, colour):
         """
         This method is called once at the beginning of the game to initialise
@@ -19,7 +25,6 @@ class MinimaxPlayer:
         # set up our current node and
         self.current_node = Node()
         self.colour = colour
-        # print({WHITE: heuristic(WHITE, self.current_node.state), BLACK: heuristic(BLACK, self.current_node.state)})
 
     def action(self):
         """
@@ -31,14 +36,7 @@ class MinimaxPlayer:
         """
         # TODO: Decide what action to take, and return it
         # this player of ours will just pick a random one
-        # normally 18 with depth of 2
-        if self.current_node.state.total_pieces() > 20:
-            return get_greedy_action(self.colour, self.current_node, budget)
-        # end game, double the depth
-        if self.current_node.state.total_pieces() < 7:
-            return get_alphabeta_action(self.colour, self.current_node, budget * 2)
-
-        return get_alphabeta_action(self.colour, self.current_node, budget)
+        return get_greedy_action(self.current_node, self.colour, budget)
 
     def update(self, colour, action):
         """
@@ -56,4 +54,4 @@ class MinimaxPlayer:
         against the game rules).
         """
         # TODO: Update state representation in response to action.
-        self.current_node = self.current_node.apply_action(colour, action)
+        self.current_node = apply_action(self.current_node, action, colour)
